@@ -4,7 +4,7 @@ import type { Journal } from "../storage/journal.ts";
 import { digest } from "../storage/journal.ts";
 import type { EngineState, Probe, ToolCall, Effect } from "./contracts.ts";
 import type { Policy } from "./policy.ts";
-import { ensure } from "./policy.ts";
+import { ensure, keys } from "./policy.ts";
 import type { Registry } from "./registry.ts";
 const run = promisify(execFile);
 export interface BrokerOptions {
@@ -30,6 +30,8 @@ export class Broker {
     const { store, registry, policy, workspace, probe } = this.options,
       now = this.options.now ?? Date.now;
     ensure(request.call?.name === "runbook.execute", "unknown_tool");
+    keys(request.call, ["name", "arguments"], "invalid_tool_call");
+    keys(request.call.arguments, ["id", "version", "digest", "parameters"], "invalid_tool_call");
     const args = request.call.arguments,
       book = registry.get(args.id);
     registry.validateArgs(book, args.parameters);

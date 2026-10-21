@@ -85,6 +85,10 @@ test("broker가 사전 허용 script를 한 번 적용하고 새 probe로 검증
       }).execute(request),
       /action_not_allowed/,
     );
+    await assert.rejects(
+      broker.execute({ ...request, call: { ...request.call, shell: "synthetic-unregistered" } }),
+      /invalid_tool_call/,
+    );
   } finally {
     store.close();
     rmSync(workspace, { recursive: true, force: true });
