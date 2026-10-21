@@ -10,7 +10,7 @@ export const policyFixture = () => ({
   severityMap: { critical: "P0", major: "P1", minor: "P2" },
   periodMs: 60000,
   maxRunsPerPeriod: 8,
-  maxAttemptsPerIncident: 3,
+  maxAttemptsPerIncidentPerPeriod: 3,
   persistenceMs: 1000,
   runDeadlineMs: 1000,
   allowedRunbooks: [

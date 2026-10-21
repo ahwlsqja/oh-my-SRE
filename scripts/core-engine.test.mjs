@@ -2,6 +2,28 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { harness } from "./core-harness.mjs";
 import { digest } from "../storage/journal.ts";
+test("시도 상한은 같은 기간 재시작으로 우회하지 않고 다음 기간 dueAt에 재개한다", async () => {
+  let h = await harness({ action: false, policy: { maxAttemptsPerIncidentPerPeriod: 1 } });
+  try {
+    await h.engine.ingest(h.observation());
+    const workspace = h.workspace,
+      at = h.clock.value;
+    h.clock.value += 1001;
+    await h.engine.tick();
+    assert.equal(h.investigator.calls, 1);
+    await h.close(false);
+    h = await harness({ workspace, action: false, policy: { maxAttemptsPerIncidentPerPeriod: 1 } });
+    h.clock.value = at + 1002;
+    await h.engine.tick();
+    assert.equal(h.investigator.calls, 0);
+    h.clock.value = Math.floor(at / h.policy.periodMs) * h.policy.periodMs + h.policy.periodMs + 1;
+    await h.engine.tick();
+    assert.equal(h.investigator.calls, 1);
+    assert.equal(Object.values(h.store.state.incidents)[0].attempts, 2);
+  } finally {
+    await h.close();
+  }
+});
 
 test("P2 중복과 같은 의미 poll은 억제하고 dueAt·기간 예산을 지킨다", async () => {
   const h = await harness({ action: false, policy: { maxRunsPerPeriod: 1 } });

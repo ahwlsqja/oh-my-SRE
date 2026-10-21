@@ -26,7 +26,7 @@ export async function harness(options = {}) {
     severityMap: { critical: "P0", major: "P1", minor: "P2" },
     periodMs: 60000,
     maxRunsPerPeriod: 8,
-    maxAttemptsPerIncident: 5,
+    maxAttemptsPerIncidentPerPeriod: 5,
     persistenceMs: 1000,
     runDeadlineMs: 1000,
     allowedRunbooks: [

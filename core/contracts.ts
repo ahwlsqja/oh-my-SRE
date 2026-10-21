@@ -52,6 +52,8 @@ export interface Incident {
   status: "open" | "resolved";
   investigation: string;
   attempts: number;
+  attemptPeriod: number;
+  periodAttempts: number;
   dueAt: number;
   evidenceExpiresAt: number;
   activeRunId?: string;

@@ -108,7 +108,11 @@ export class Engine {
           semanticDigest: observation.semanticDigest,
           status: "open",
           investigation: "queued",
-          attempts: 0,
+          attempts: incident?.attempts ?? 0,
+          attemptPeriod:
+            incident?.attemptPeriod ??
+            Math.floor(this.now() / this.policy.periodMs) * this.policy.periodMs,
+          periodAttempts: incident?.periodAttempts ?? 0,
           dueAt: this.now(),
           evidenceExpiresAt: observation.expiresAt,
           recovery: "unverified",
@@ -182,8 +186,13 @@ export class Engine {
         incident.investigation = "effect_unknown";
         return;
       }
-      if (incident.attempts >= this.policy.maxAttemptsPerIncident) {
+      if (incident.attemptPeriod !== Number(period)) {
+        incident.attemptPeriod = Number(period);
+        incident.periodAttempts = 0;
+      }
+      if (incident.periodAttempts >= this.policy.maxAttemptsPerIncidentPerPeriod) {
         incident.investigation = "attempt_paused";
+        incident.dueAt = Number(period) + this.policy.periodMs;
         return;
       }
       const budget = s.budgets[period] ?? { reserved: 0, spent: 0 };
@@ -195,6 +204,7 @@ export class Engine {
       }
       budget.reserved++;
       incident.attempts++;
+      incident.periodAttempts++;
       incident.activeRunId = randomUUID();
       incident.activeRunDeadlineAt = now + this.policy.runDeadlineMs;
       incident.investigation = "running";

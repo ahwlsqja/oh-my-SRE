@@ -14,7 +14,7 @@ export interface Policy {
   severityMap: Record<string, Exclude<Severity, "unknown">>;
   periodMs: number;
   maxRunsPerPeriod: number;
-  maxAttemptsPerIncident: number;
+  maxAttemptsPerIncidentPerPeriod: number;
   persistenceMs: number;
   runDeadlineMs: number;
   allowedRunbooks: RunbookAllowance[];
@@ -45,7 +45,7 @@ export function validatePolicy(input: unknown): Policy {
     "severityMap",
     "periodMs",
     "maxRunsPerPeriod",
-    "maxAttemptsPerIncident",
+    "maxAttemptsPerIncidentPerPeriod",
     "persistenceMs",
     "runDeadlineMs",
     "allowedRunbooks",
@@ -65,7 +65,7 @@ export function validatePolicy(input: unknown): Policy {
   for (const key of [
     "periodMs",
     "maxRunsPerPeriod",
-    "maxAttemptsPerIncident",
+    "maxAttemptsPerIncidentPerPeriod",
     "persistenceMs",
     "runDeadlineMs",
   ])
