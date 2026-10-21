@@ -86,6 +86,23 @@ export class Engine {
         observation.failureClass,
       ]),
       fresh = observation.expiresAt > this.now() && observation.evidenceState === "complete";
+    const latest = store.state.incidents[id]?.observation;
+    if (
+      latest &&
+      latest.providerId === observation.providerId &&
+      observation.observedAt < latest.observedAt
+    ) {
+      store.transaction((s) => {
+        s.seen.push(seen);
+        s.audit.push({
+          at: this.now(),
+          kind: "out_of_order",
+          incidentId: id,
+          detail: observation.providerId,
+        });
+      });
+      return { outcome: "out_of_order", incidentId: id };
+    }
     store.transaction((s) => {
       s.seen.push(seen);
       let incident = s.incidents[id];

@@ -2,6 +2,30 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { harness } from "./core-harness.mjs";
 import { digest } from "../storage/journal.ts";
+test("같은 원천의 과거 관측은 최신 P0·revision·dueAt를 되감지 않는다", async () => {
+  const h = await harness({ action: false });
+  try {
+    await h.engine.ingest(h.observation({ sourceSeverity: "critical" }));
+    const before = Object.values(h.store.state.incidents)[0];
+    const result = await h.engine.ingest(
+      h.observation({
+        eventId: "older-event",
+        observedAt: h.now() - 1000,
+        sourceSeverity: "minor",
+        semanticDigest: digest("old"),
+      }),
+    );
+    assert.equal(result.outcome, "out_of_order");
+    const after = Object.values(h.store.state.incidents)[0];
+    assert.equal(after.severity, "P0");
+    assert.equal(after.revision, before.revision);
+    assert.equal(after.dueAt, before.dueAt);
+    assert.equal(after.observation.observedAt, before.observation.observedAt);
+    assert.equal(h.investigator.calls, 1);
+  } finally {
+    await h.close();
+  }
+});
 test("시도 상한은 같은 기간 재시작으로 우회하지 않고 다음 기간 dueAt에 재개한다", async () => {
   let h = await harness({ action: false, policy: { maxAttemptsPerIncidentPerPeriod: 1 } });
   try {
