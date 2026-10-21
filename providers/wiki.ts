@@ -36,6 +36,16 @@ export class GitWiki {
     this.directory = directory;
     this.limits = limits;
     mkdirSync(directory, { recursive: true, mode: 0o700 });
+    const marker = join(directory, ".oms-wiki-owner.json");
+    if (!existsSync(marker)) {
+      ensure(readdirSync(directory).length === 0, "wiki_not_owned");
+      writeFileSync(marker, JSON.stringify({ kind: "oh-my-sre-wiki", version: 1 }), {
+        flag: "wx",
+        mode: 0o600,
+      });
+    }
+    const owner = JSON.parse(readFileSync(marker, "utf8"));
+    ensure(owner.kind === "oh-my-sre-wiki" && owner.version === 1, "wiki_not_owned");
     if (!existsSync(join(directory, ".git")))
       this.git(["init", "-q", "--initial-branch=knowledge"]);
     for (const path of ["incidents", "drafts"])
@@ -80,14 +90,17 @@ export class GitWiki {
       }
     } else ensure(readFileSync(path, "utf8") === content, "wiki_conflict");
     this.git(["add", "--", relative]);
-    if (this.git(["diff", "--cached", "--name-only"]).trim())
+    if (this.git(["diff", "--cached", "--name-only", "--", relative]).trim())
       this.git([
         "commit",
+        "--only",
         "-q",
         "-m",
         area === "incidents"
           ? "독립 검증 결과를 다음 사건의 근거로 남긴다"
           : "런북 수정안을 실행 권한과 분리해 보존한다",
+        "--",
+        relative,
       ]);
     return relative;
   }

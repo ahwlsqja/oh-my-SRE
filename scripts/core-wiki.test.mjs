@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execFileSync } from "node:child_process";
@@ -31,5 +31,41 @@ test("성공·실패 학습을 Git에 멱등 기록하고 draft와 분리해 재
     );
   } finally {
     rmSync(root, { recursive: true, force: true });
+  }
+});
+test("전용 owner repo만 운용하며 다른 staged 파일을 커밋하지 않는다", () => {
+  const root = mkdtempSync(join(tmpdir(), "oms-owned-wiki-")),
+    foreign = mkdtempSync(join(tmpdir(), "oms-foreign-wiki-"));
+  try {
+    execFileSync("git", ["-C", foreign, "init", "-q"]);
+    assert.throws(
+      () => new GitWiki(foreign, { maxEntries: 100, maxEntryBytes: 10000 }),
+      /wiki_not_owned/,
+    );
+    const wiki = new GitWiki(root, { maxEntries: 100, maxEntryBytes: 10000 });
+    writeFileSync(join(root, "unrelated.txt"), "synthetic staged file");
+    execFileSync("git", ["-C", root, "add", "unrelated.txt"]);
+    wiki.record({
+      incidentId: "demo",
+      episode: 1,
+      revision: 1,
+      failureClass: "worker-error",
+      severity: "P2",
+      outcome: "blocked",
+    });
+    assert.equal(
+      execFileSync("git", ["-C", root, "diff", "--cached", "--name-only"], {
+        encoding: "utf8",
+      }).trim(),
+      "unrelated.txt",
+    );
+    assert.ok(
+      !execFileSync("git", ["-C", root, "show", "--format=", "--name-only", "HEAD"], {
+        encoding: "utf8",
+      }).includes("unrelated.txt"),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+    rmSync(foreign, { recursive: true, force: true });
   }
 });
