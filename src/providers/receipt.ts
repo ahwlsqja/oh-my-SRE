@@ -60,7 +60,7 @@ export type SnapshotView = Omit<Snapshot, "receipts"> & {
 };
 
 export function projectSnapshot(input: unknown, now = Date.now()): SnapshotView {
-  const snapshot = input as Snapshot;
+  const snapshot = validateSnapshot(input, now);
   return {
     version: 1,
     capturedAt: snapshot.capturedAt,
@@ -69,9 +69,80 @@ export function projectSnapshot(input: unknown, now = Date.now()): SnapshotView 
       const expiry = Date.parse(receipt.observedAt) + receipt.ttlSeconds * 1000;
       return {
         ...receipt,
-        status: now >= expiry ? "stale" : receipt.verdict,
+        status:
+          now >= expiry
+            ? "stale"
+            : receipt.verdict === "verified" && receipt.coverage === "incomplete"
+              ? "partial"
+              : receipt.verdict,
         expiresAt: new Date(expiry).toISOString(),
       };
     }),
   };
+}
+
+function requireValid(condition: unknown): asserts condition {
+  if (!condition) throw new Error("invalid_receipt");
+}
+function object(value: unknown, keys: readonly string[]): Record<string, unknown> {
+  requireValid(value !== null && typeof value === "object" && !Array.isArray(value));
+  requireValid(Object.keys(value).every((key) => keys.includes(key)));
+  return value as Record<string, unknown>;
+}
+function timestamp(value: unknown): number {
+  requireValid(
+    typeof value === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value),
+  );
+  const parsed = Date.parse(value);
+  requireValid(Number.isFinite(parsed) && new Date(parsed).toISOString() === value);
+  return parsed;
+}
+export function validateSnapshot(input: unknown, now = Date.now()): Snapshot {
+  const top = object(input, ["version", "capturedAt", "receipts"]);
+  requireValid(top.version === 1);
+  const captured = timestamp(top.capturedAt);
+  requireValid(captured <= now);
+  requireValid(
+    Array.isArray(top.receipts) && top.receipts.length >= 1 && top.receipts.length <= 32,
+  );
+  for (const entry of top.receipts) {
+    const row = object(entry, [
+      "sourceKind",
+      "claim",
+      "verdict",
+      "observedAt",
+      "ttlSeconds",
+      "scopeDigest",
+      "evidenceDigest",
+      "coverage",
+      "limitations",
+      "counters",
+    ]);
+    requireValid(
+      sourceKinds.includes(row.sourceKind as Receipt["sourceKind"]) &&
+        claims.includes(row.claim as Receipt["claim"]),
+    );
+    requireValid(["verified", "partial", "unknown", "failed"].includes(row.verdict as string));
+    requireValid(timestamp(row.observedAt) <= captured);
+    requireValid(
+      Number.isInteger(row.ttlSeconds) &&
+        (row.ttlSeconds as number) >= 1 &&
+        (row.ttlSeconds as number) <= 86400,
+    );
+    for (const digest of [row.scopeDigest, row.evidenceDigest])
+      requireValid(typeof digest === "string" && /^[a-f0-9]{64}$/.test(digest));
+    requireValid(row.coverage === "scoped" || row.coverage === "incomplete");
+    requireValid(
+      Array.isArray(row.limitations) &&
+        row.limitations.length <= limitations.length &&
+        row.limitations.every((item) => limitations.includes(item)),
+    );
+    const counters = object(row.counters, counterKeys);
+    requireValid(
+      Object.values(counters).every(
+        (value) => Number.isSafeInteger(value) && (value as number) >= 0,
+      ),
+    );
+  }
+  return structuredClone(input) as Snapshot;
 }
