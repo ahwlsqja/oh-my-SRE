@@ -115,9 +115,11 @@ export class OpenAIResponsesInvestigator implements Investigator {
         observation: context.observation,
         knowledge: context.knowledge,
       }),
-      tools: mappings.map(({ internal: _, ...tool }) => ({
+      tools: mappings.map((tool) => ({
         type: "function",
-        ...tool,
+        name: tool.name,
+        description: tool.description,
+        parameters: tool.parameters,
         strict: true,
       })),
       parallel_tool_calls: false,

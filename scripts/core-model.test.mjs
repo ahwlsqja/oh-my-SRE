@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { OpenAIResponsesInvestigator } from "../providers/openai-responses.ts";
 import { harness } from "./core-harness.mjs";
+import { digest } from "../storage/journal.ts";
 test("공식 Responses wire의 도구제안·usage를 로컬 stub으로 검증한다", async () => {
   const h = await harness({ action: false });
   let mode = "ok",
@@ -70,7 +71,7 @@ test("공식 Responses wire의 도구제안·usage를 로컬 stub으로 검증�
         maxOutputTokens: 32,
         maxRequestBytes: 20000,
         maxResponseBytes: 5000,
-        timeoutMs: 50,
+        timeoutMs: 200,
       };
     const adapter = new OpenAIResponsesInvestigator(options);
     const invoke = () =>
@@ -98,6 +99,26 @@ test("공식 Responses wire의 도구제안·usage를 로컬 stub으로 검증�
       await assert.rejects(invoke(), error);
     }
     assert.equal(redirectHits, 0);
+    mode = "ok";
+    h.clock.value = Date.now();
+    h.engine.options.investigator = adapter;
+    await h.engine.ingest(
+      h.observation({
+        eventId: "api-stub-event",
+        failureClass: "api-stub-case",
+        semanticDigest: digest("api-stub-case"),
+      }),
+    );
+    assert.ok(
+      Object.values(h.store.state.modelUsage).some(
+        (usage) => usage.kind === "openai_responses" && usage.totalTokens === 12,
+      ),
+    );
+    assert.ok(
+      Object.values(h.store.state.incidents).some(
+        (incident) => incident.failureClass === "api-stub-case" && incident.recovery === "verified",
+      ),
+    );
     assert.throws(
       () => new OpenAIResponsesInvestigator({ ...options, allowLocalStub: false }),
       /https_required/,

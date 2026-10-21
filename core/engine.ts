@@ -3,13 +3,7 @@ import { safeErrorCode } from "./errors.ts";
 import type { Journal } from "../storage/journal.ts";
 import { digest } from "../storage/journal.ts";
 import { validatePolicy, ensure, identifier, keys, type Policy } from "./policy.ts";
-import type {
-  EngineState,
-  Observation,
-  Incident,
-  Investigator,
-  Investigation,
-} from "./contracts.ts";
+import type { EngineState, Observation, Investigator, Investigation } from "./contracts.ts";
 import type { Broker } from "./broker.ts";
 import type { GitWiki } from "../providers/wiki.ts";
 import { deriveExports, callDerivedTool } from "./tool-exports.ts";
@@ -453,9 +447,46 @@ export class Engine {
     const state = this.options.store.state;
     return {
       kind: "local_engine" as const,
+      scope: "local_demo" as const,
       investigator: this.options.investigator.kind,
-      observedAt: new Date(this.now()).toISOString(),
-      incidents: Object.values(state.incidents),
+      observedAt: new Date().toISOString(),
+      incidents: Object.values(state.incidents).map(
+        ({
+          id,
+          resourceKey,
+          failureClass,
+          episode,
+          revision,
+          severity,
+          evidenceState,
+          status,
+          investigation,
+          attempts,
+          periodAttempts,
+          dueAt,
+          recovery,
+          knowledgeHits,
+          runbookRef,
+          failureCode,
+        }) => ({
+          id,
+          resourceKey,
+          failureClass,
+          episode,
+          revision,
+          severity,
+          evidenceState,
+          status,
+          investigation,
+          attempts,
+          periodAttempts,
+          dueAt,
+          recovery,
+          knowledgeHits,
+          ...(runbookRef ? { runbookRef } : {}),
+          ...(failureCode ? { failureCode } : {}),
+        }),
+      ),
       pages: Object.values(state.outbox),
       effects: Object.values(state.effects),
       budgets: state.budgets,

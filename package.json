@@ -2,13 +2,13 @@
   "name": "oh-my-sre",
   "version": "0.1.0",
   "private": true,
-  "description": "근거와 사람의 판단을 중심에 둔 SRE 인터페이스의 합성 데모",
+  "description": "등록 런북과 근거 검증을 연결하는 범용 SRE 에이전트의 첫 로컬 실행 slice",
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "typecheck": "tsc --noEmit",
-    "lint": "oxlint src tests scripts server vite.config.ts playwright.config.ts",
+    "lint": "oxlint src core providers storage runbooks tests scripts server vite.config.ts playwright.config.ts",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
     "build": "pnpm tokens:check && pnpm typecheck && vite build",
@@ -20,7 +20,9 @@
     "tokens:check": "node scripts/generate-sds.mjs --check",
     "test:sds": "node --test scripts/sds-contract.test.mjs",
     "test:uptime": "node --experimental-strip-types --test scripts/uptime-contract.test.mjs",
-    "test:receipt": "node --experimental-strip-types --test scripts/receipt-contract.test.mjs"
+    "test:receipt": "node --experimental-strip-types --test scripts/receipt-contract.test.mjs",
+    "test:core": "node --experimental-strip-types --test scripts/core-*.test.mjs runbooks/*/tests/*.test.mjs",
+    "engine:demo": "node --experimental-strip-types scripts/engine-demo.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "1.3.1",
