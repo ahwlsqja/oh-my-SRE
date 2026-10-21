@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { projectSnapshot } from "../src/providers/receipt.ts";
+import { createReceiptMiddleware, readReceiptFile } from "../server/receipt-provider.mjs";
+import { mkdtemp, writeFile, symlink, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { createServer, request } from "node:http";
 
 const now = Date.parse("2026-01-01T12:00:00.000Z");
 export const fixture = () => ({
@@ -86,4 +91,77 @@ test("불완전 coverage는 단계 확인으로 승격되지 않는다", () => {
   const input = fixture();
   input.receipts[0].coverage = "incomplete";
   assert.equal(projectSnapshot(input, now).receipts[0].status, "partial");
+});
+
+test("저장소 밖 고정 일반 파일만 상한 내에서 읽고 원문 오류를 숨긴다", async () => {
+  const root = await mkdtemp(join(tmpdir(), "oms-synthetic-"));
+  const file = join(root, "receipt.json");
+  try {
+    await writeFile(file, JSON.stringify(fixture()));
+    assert.deepEqual(await readReceiptFile(file, process.cwd(), now), fixture());
+    await writeFile(file, " ".repeat(131073));
+    await assert.rejects(readReceiptFile(file, process.cwd(), now), /receipt_unavailable/);
+    await writeFile(file, "invalid-json");
+    await assert.rejects(readReceiptFile(file, process.cwd(), now), /^Error: receipt_unavailable$/);
+    await symlink(file, join(root, "link.json"));
+    await assert.rejects(
+      readReceiptFile(join(root, "link.json"), process.cwd(), now),
+      /receipt_unavailable/,
+    );
+    for (const path of [undefined, "relative.json", root, join(process.cwd(), "package.json")]) {
+      await assert.rejects(
+        readReceiptFile(path, process.cwd(), now),
+        /^Error: receipt_unavailable$/,
+      );
+    }
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("endpoint는 동일 로컬 Host/Origin의 GET만 허용한다", async () => {
+  const root = await mkdtemp(join(tmpdir(), "oms-synthetic-"));
+  const file = join(root, "receipt.json");
+  await writeFile(file, JSON.stringify(fixture()));
+  const server = createServer();
+  server.on(
+    "request",
+    createReceiptMiddleware({
+      path: file,
+      root: process.cwd(),
+      getPort: () => server.address().port,
+      now: () => now,
+    }),
+  );
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const port = server.address().port;
+  const url = `http://127.0.0.1:${port}/api/receipts`;
+  try {
+    const ok = await fetch(url, { headers: { origin: `http://127.0.0.1:${port}` } });
+    assert.equal(ok.status, 200);
+    assert.deepEqual(await ok.json(), fixture());
+    assert.equal(ok.headers.get("cache-control"), "no-store");
+    assert.equal(ok.headers.get("access-control-allow-origin"), null);
+    for (const headers of [
+      { origin: "https://example.invalid" },
+      { host: `example.invalid:${port}` },
+      { host: "localhost:1" },
+      { "sec-fetch-site": "cross-site" },
+    ]) {
+      const status = await new Promise((resolve, reject) => {
+        const req = request(url, { headers }, (res) => {
+          res.resume();
+          resolve(res.statusCode);
+        });
+        req.on("error", reject);
+        req.end();
+      });
+      assert.equal(status, 403, JSON.stringify(headers));
+    }
+    assert.equal((await fetch(url, { method: "POST" })).status, 405);
+    assert.equal((await fetch(`${url}?file=other`)).status, 400);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+    await rm(root, { recursive: true, force: true });
+  }
 });
