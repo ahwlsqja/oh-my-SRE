@@ -45,14 +45,14 @@
 
 provider는 `capabilities`를 선언하고 contract test로 검증한다. 선언만으로 권한이 생기지 않는다. 도구·파일·네트워크 제한을 집행할 수 없는 runtime은 그 제한이 필요한 자율 실행 구성에 연결하지 않는다. 관측·로그·외부 문서는 신뢰하지 않는 데이터이며 그 안의 지시를 도구 권한으로 승격하지 않는다.
 
-| 후보 계열                 | 목표 역할     | 현재 지원 상태와 확인할 인증                                                                                                     |
-| ------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| OpenAI-compatible API     | Model         | 미구현. API 호환 범위·structured output·usage·오류를 개별 endpoint와 contract test로 확인. 호환이 가격·기능 동일성을 뜻하지 않음 |
-| Anthropic API             | Model         | 미구현. 공식 API 인증과 해당 모델의 기능을 구현 전에 확인                                                                        |
-| Codex / 공식 구독 CLI     | Agent runtime | 미구현. 공식 지원 실행·로그인·비대화형 동작·도구 제한을 확인한 조합만 지원                                                       |
-| OpenCode                  | Agent runtime | 미구현. 실행 인터페이스와 선택된 하위 모델 provider의 인증을 각각 확인                                                           |
-| 공식 구독 기반 agent 환경 | Agent runtime | 구독이 범용 API key를 대체한다고 가정하지 않음. 다른 프로그램에서 호출 가능한 공식 경로가 없으면 미지원                          |
-| Jev                       | 후보          | 지칭 제품·공식 연동 계약 확인 필요. 현재 지원 또는 호환을 주장하지 않음                                                          |
+| 후보 계열                 | 목표 역할     | 현재 지원 상태와 확인할 인증                                                                            |
+| ------------------------- | ------------- | ------------------------------------------------------------------------------------------------------- |
+| OpenAI Responses API      | Model         | 단일 Responses profile·localhost stub 검증. 실제 모델·다른 vendor·Chat Completions 호환은 미검증        |
+| Anthropic API             | Model         | 미구현. 공식 API 인증과 해당 모델의 기능을 구현 전에 확인                                               |
+| Codex / 공식 구독 CLI     | Agent runtime | 미구현. 공식 지원 실행·로그인·비대화형 동작·도구 제한을 확인한 조합만 지원                              |
+| OpenCode                  | Agent runtime | 미구현. 실행 인터페이스와 선택된 하위 모델 provider의 인증을 각각 확인                                  |
+| 공식 구독 기반 agent 환경 | Agent runtime | 구독이 범용 API key를 대체한다고 가정하지 않음. 다른 프로그램에서 호출 가능한 공식 경로가 없으면 미지원 |
+| Jev                       | 후보          | 지칭 제품·공식 연동 계약 확인 필요. 현재 지원 또는 호환을 주장하지 않음                                 |
 
 비밀은 실행 호스트의 credential resolver가 소유하고 계약에는 `credentialRef`만 전달한다. UI에는 연결 상태·지원 기능·실패 이유만 노출한다. 개인 cookie·token 저장소 추출, 구독 token의 API proxy 전용, 비공식 로그인 우회는 지원 경로가 아니다. 외부 SDK·모델 선정과 공식 문서 검증은 해당 adapter 구현 단계에서 수행한다.
 
@@ -213,7 +213,7 @@ MCP/AgentSkills는 서로 대체하는 데이터베이스가 아니다. **canoni
 }
 ```
 
-실행 registry는 이 manifest·JSON Schema·scripts·의존성 lock으로 계산한 결정론적 bundle digest와 승격된 Git revision을 고정한다. 설치 allowlist는 `runbookId+version+digest+effect+target scope`를 허용한다. broker는 typed args를 검증하고 대상 scope·최신 사전조건·예산·실행 동시성·grant 만료를 검사한다. LLM이 제안한 임의 script 경로·환경변수·명령 문자열은 실행 입력이 아니다. 실행 직전 digest를 다시 대조해 문서/인덱스의 오래된 참조와 파일 교체를 차단한다.
+현재 registry는 정적 runbook 디렉터리의 manifest·JSON Schema·scripts/helper·tests·문서를 포함한 결정론적 bundle digest를 고정한다. 첫 예제는 외부 의존성이 없으며 설치 allowlist가 그 version/hash를 승인한다. 자동 promotion 서비스와 별도 승격 Git revision receipt는 확장 목표다. CLI 실행 receipt에는 전체 source revision을 기록한다. 설치 allowlist는 `runbookId+version+digest+effect+target scope`를 허용한다. broker는 typed args를 검증하고 대상 scope·최신 사전조건·예산·실행 동시성·grant 만료를 검사한다. LLM이 제안한 임의 script 경로·환경변수·명령 문자열은 실행 입력이 아니다. 실행 직전 digest를 다시 대조해 문서/인덱스의 오래된 참조와 파일 교체를 차단한다.
 
 현재는 사건/실패 요약의 자동 기록·exact failureClass 검색·텍스트 draft 분리·metadata 파생까지 구현했다. 별도 의미 검색·자동 코드 수정·운영 승격 서비스는 미구현이다. Git wiki는 marker가 있는 engine-owned 전용 repo만 운용하며 변경한 지식 파일만 commit한다([계약](../scripts/core-wiki.test.mjs)).
 
@@ -267,11 +267,11 @@ MCP/AgentSkills는 서로 대체하는 데이터베이스가 아니다. **canoni
 2. investigator 계약에 deterministic fixture adapter와 `OpenAIResponsesInvestigator`를 구현했다. fixture는 재현 가능한 테스트용이며 실제 모델 실행으로 표시하지 않는다. Responses adapter는 공식 wire로 만든 로컬 stub→core→broker→wiki와 오류/크기/abort/redirect/args를 검증했다. API key·실모델 live 호출은 0이며 실제 인증 연결은 별도 smoke가 필요하다. 응답 도구 제안 한 번만 처리하고 후속 function_call_output 대화는 아직 지원하지 않는다.
 3. 단일 프로세스 `CoreStore`는 우선 로컬 append journal로 구현한다. 한 transaction record 안에 사건·예약·outbox 변경을 기록하고 flush 성공 뒤 외부 효과를 시작한다. transaction ID 재생은 멱등이어야 하며 시작 시 단일 owner 잠금을 획득한다. 손상/불완전 tail은 복구 전 효과를 멈춘다. 분산 owner·다중 호스트 원자성은 이 slice 범위 밖이다.
 4. scheduler는 persisted `dueAt`·fake clock·시도/기간 예산을 사용한다. 재시작 후 같은 입력은 새 조사나 비용 예약을 만들지 않는다.
-5. canonical runbook 1개를 manifest+JSON Schema+정적 Node script+tests+문서로 등록한다. 로컬 sandbox의 합성 worker 상태를 바꾸는 사전 허용 script를 실제로 실행하고 별도 HTTP probe로 회복을 검증한다. unknown/거부/실패는 fake executor로 주입한다. 외부 운영 리소스의 복구는 이 slice 범위 밖이다.
+5. canonical runbook 1개를 manifest+JSON Schema+정적 Node script+tests+문서로 등록한다. 소유한 로컬 테스트 workspace의 합성 worker 상태를 바꾸는 사전 허용 script를 실제로 실행하고 별도 HTTP probe로 회복을 검증한다. unknown/거부/실패는 테스트 probe와 중단 fixture로 주입한다. 외부 운영 리소스의 복구는 이 slice 범위 밖이다.
 6. Git/Markdown wiki에 사건 요약·근거 참조·런북 버전·실패 학습을 기록하고 다음 같은 사례에서 검색해 재사용한다. 새 런북 수정안은 draft로만 생성하며 테스트/검토/승격 전 runtime registry에 노출하지 않는다. MCP/AgentSkills는 우선 metadata와 tool contract를 생성해 정본 일치를 검증한다.
-7. notification은 로컬 durable outbox와 fake provider로 P0 page/ACK/update/recovery를 검증한다. 첫 외부 채널 adapter는 그다음 범위다. UI에 실제 engine run과 합성 입력/fixture investigator 여부를 명시한다.
+7. notification은 로컬 durable outbox 상태 전이로 P0 page/ACK/update/recovery를 검증한다. 첫 외부 채널 adapter는 그다음 범위다. UI에 실제 engine run과 합성 입력/fixture investigator 여부를 명시한다.
 
-구현 모듈은 `core/`(사건·정책·예산·scheduler), `providers/`(관측·investigator·action·알림), `storage/`(journal), `projection/`이다. 스케줄러는 호출자가 구동하는 `tick()` API이며 상시 daemon은 미연결이다. 현재 registry는 안전한 상대 `.mjs` entrypoint와 helper·schema·문서·tests를 포함한 전체 bundle을 hash하고 symlink를 거부한다. 인자 JSON Schema는 object+string const subset만 지원한다. script는 신뢰된 운영자 승인 코드이며 비신뢰 코드를 격리하는 sandbox를 제공하지 않는다. runtime provider의 공식 CLI integration과 두 번째 실제 모델·관측 시스템으로 교체 가능성을 증명하는 작업은 뒤따르는 인수다. 첫 slice 성공을 모든 provider 지원으로 확대하지 않는다.
+구현 모듈은 `core/`(엔진·broker·정책·registry·tool metadata), `providers/`(fixture·Responses·로컬 HTTP probe·Git wiki), `storage/`(journal)다. 화면 projection은 `Engine.projection()`·`server/engine-provider.mjs`·`src/EngineApp.tsx`가 제공한다. 스케줄러는 호출자가 구동하는 `tick()` API이며 상시 daemon은 미연결이다. 현재 registry는 안전한 상대 `.mjs` entrypoint와 helper·schema·문서·tests를 포함한 전체 bundle을 hash하고 symlink를 거부한다. 인자 JSON Schema는 object+string const subset만 지원한다. script는 신뢰된 운영자 승인 코드이며 비신뢰 코드를 격리하는 sandbox를 제공하지 않는다. runtime provider의 공식 CLI integration과 두 번째 실제 모델·관측 시스템으로 교체 가능성을 증명하는 작업은 뒤따르는 인수다. 첫 slice 성공을 모든 provider 지원으로 확대하지 않는다.
 
 ### 10.1 현재 인수와 재현
 
@@ -293,12 +293,12 @@ MCP/AgentSkills는 서로 대체하는 데이터베이스가 아니다. **canoni
 | 결정·위험                                                              | 담당 / 해결 시점                                                                   |
 | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | P1/P2 조사+사전 허용 복구                                              | 사용자 확정 / 설치별 runbook·대상 allowlist는 활성화 전 검토                       |
-| 첫 실제 모델·runtime의 공식 API/CLI·인증·제한·usage 계약               | 구현자+사용자 / 해당 adapter 구현 전                                               |
-| severity·correlation·지속/재호출·회복 관측 기간의 설치별 policy schema | 엔진 설계 검토 / slice 구현 전. 합성 수치로 운영 기본값을 만들지 않음              |
+| 첫 실제 모델·runtime의 공식 API/CLI·인증·제한·usage 계약               | 구현자+사용자 / 실제 인증 연결·agent CLI 연동 전                                   |
+| severity·correlation·지속/재호출·회복 관측 기간의 설치별 policy schema | 운영 설치 정책 인수 전. 합성 수치로 운영 기본값을 만들지 않음                      |
 | 단일 owner journal의 crash durability와 보존·크기 관리                 | 저장소 구현자 / crash-injection 인수. 검증 실패 시 storage adapter 재선정          |
-| runbook bundle digest·승격 역할·JSON Schema·export 동기화              | 엔진/adapter 구현자 / 첫 로컬 static-runbook slice 전에 계약 고정                  |
+| runbook bundle digest·승격 역할·JSON Schema·export 동기화              | 엔진/adapter 구현자 / 운영 런북 확장·승격 서비스 인수 전                           |
 | runtime의 우회 도구·네트워크/secret 접근                               | adapter 구현자 / capability 지원 선언 전. 제한 집행 증거가 없으면 해당 구성 미지원 |
 | 관측 중복과 실제 의미 변화의 잘못된 병합                               | signal schema 구현자 / provider contract test와 incident fixture                   |
 | 비용 보고 지연·알림/action 응답 손실                                   | 엔진+adapter / 미확정 상태와 reconcile 인수                                        |
 
-읽는 순서: [README](../README.md) → 이 문서 → [DESIGN](../DESIGN.md) → 현재 [ReceiptApp](../src/ReceiptApp.tsx)·[receipt adapter](../server/receipt-provider.mjs). 현재 소스는 UI·스냅샷 경계의 근거이고, 위 엔진은 다음 구현의 명세다.
+읽는 순서: [README](../README.md) → 이 문서 → [DESIGN](../DESIGN.md) → 현재 [ReceiptApp](../src/ReceiptApp.tsx)·[receipt adapter](../server/receipt-provider.mjs). 현재 소스는 로컬 엔진·UI·스냅샷 경계의 근거이고, 이 문서는 구현된 로컬 slice와 다음 확장 목표의 정본이다.

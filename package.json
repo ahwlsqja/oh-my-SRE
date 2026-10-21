@@ -22,6 +22,7 @@
     "test:uptime": "node --experimental-strip-types --test scripts/uptime-contract.test.mjs",
     "test:receipt": "node --experimental-strip-types --test scripts/receipt-contract.test.mjs",
     "test:core": "node --experimental-strip-types --test scripts/core-*.test.mjs runbooks/*/tests/*.test.mjs",
+    "test:engine-view": "node --experimental-strip-types --test scripts/engine-projection-contract.test.mjs",
     "engine:demo": "node --experimental-strip-types scripts/engine-demo.mjs"
   },
   "dependencies": {
