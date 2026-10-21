@@ -175,6 +175,12 @@ export function validateSnapshot(input: unknown, now = Date.now()): Snapshot {
         (value) => Number.isSafeInteger(value) && (value as number) >= 0,
       ),
     );
+    if (
+      (row.sourceKind === "product_overview_http" ||
+        row.sourceKind === "sre_operations_overview_http") &&
+      row.verdict === "verified"
+    )
+      requireValid(counters.httpStatus === 200);
   }
   return structuredClone(input) as Snapshot;
 }

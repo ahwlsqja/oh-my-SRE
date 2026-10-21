@@ -127,6 +127,25 @@ test("창 범위는 원천 관측 이전의 닫힌 구간으로 검증한다", (
   }
 });
 
+test("HTTP 응답 확인은 명시적 200 없이 verified가 될 수 없다", () => {
+  for (const [sourceKind, claim] of [
+    ["product_overview_http", "product_overview_response"],
+    ["sre_operations_overview_http", "sre_operations_projection"],
+  ]) {
+    const input = fixture();
+    input.receipts[0].sourceKind = sourceKind;
+    input.receipts[0].claim = claim;
+    assert.throws(() => projectSnapshot(input, now), /invalid_receipt/);
+    input.receipts[0].counters = { httpStatus: 401 };
+    assert.throws(() => projectSnapshot(input, now), /invalid_receipt/);
+    input.receipts[0].counters.httpStatus = 200;
+    assert.equal(projectSnapshot(input, now).receipts[0].status, "verified");
+    input.receipts[0].verdict = "failed";
+    input.receipts[0].counters.httpStatus = 401;
+    assert.equal(projectSnapshot(input, now).receipts[0].status, "failed");
+  }
+});
+
 test("저장소 밖 고정 일반 파일만 상한 내에서 읽고 원문 오류를 숨긴다", async () => {
   const root = await mkdtemp(join(tmpdir(), "oms-synthetic-"));
   const file = join(root, "receipt.json");

@@ -15,6 +15,10 @@ const snapshot = () => ({
       coverage: "scoped",
       limitations: ["service_health_unverified"],
       counters: { checksPassed: 5 },
+      window: {
+        start: new Date(Date.now() - 3600000).toISOString(),
+        end: new Date(Date.now() - 1800000).toISOString(),
+      },
     },
   ],
 });
@@ -28,6 +32,7 @@ test("실제 snapshot 모드는 시각과 범위를 표시하고 합성 사건·
   await expect(page.getByText("단계 확인", { exact: true })).toBeVisible();
   await expect(page.getByText("원천 관측", { exact: true })).toBeVisible();
   await expect(page.getByText("TTL 300초", { exact: true })).toBeVisible();
+  await expect(page.getByText("집계 창", { exact: true })).toBeVisible();
   await expect(page.getByText("기간별 이력 미제공", { exact: true })).toBeVisible();
   for (const pattern of [
     /DEMO/,
@@ -54,6 +59,7 @@ test("오류와 오래된 근거는 DEMO나 정상으로 전환되지 않는다"
   await expect(page.locator("body")).not.toContainText("이벤트 처리 지연");
   const stale = snapshot();
   stale.receipts[0].observedAt = "2020-01-01T00:00:00.000Z";
+  stale.receipts[0].window = { start: "2019-12-31T22:00:00.000Z", end: "2019-12-31T23:00:00.000Z" };
   await page.unroute("**/api/receipts");
   await page.route("**/api/receipts", (route) => route.fulfill({ json: stale }));
   await page.getByRole("button", { name: "다시 읽기" }).click();

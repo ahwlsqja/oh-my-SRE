@@ -12,5 +12,7 @@
 - [x] 오류·만료 화면은 DEMO로 자동 전환하지 않는다.
 - [x] source kind와 claim의 잘못된 조합을 거부한다.
 - [x] Fact 후보 대응과 Raw 적재원장 연결은 전체 경로 검증과 별도 claim으로 보존한다.
+- [x] 집계 창은 원천 관측 이전의 시작 포함·끝 제외 구간으로 검증하고 표시한다.
+- [x] HTTP 응답 claim의 verified는 명시적 HTTP 200이 있어야 한다.
 
 검증: Node 계약 테스트, 기존 SDS/이력 계약, 타입·린트·포맷·빌드, desktop/mobile Playwright.
