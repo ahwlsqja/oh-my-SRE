@@ -2,6 +2,23 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { harness } from "./core-harness.mjs";
 import { digest } from "../storage/journal.ts";
+test("모델 HTTP 오류 코드는 값 노출 없이 실패 지식에 보존한다", async () => {
+  const h = await harness({
+    investigator: {
+      kind: "openai_responses",
+      async investigate() {
+        throw new Error("model_http_429");
+      },
+    },
+  });
+  try {
+    await h.engine.ingest(h.observation());
+    assert.equal(h.wiki.search("worker-error")[0].failureCode, "model_http_429");
+    assert.equal(Object.values(h.store.state.budgets)[0].reserved, 1);
+  } finally {
+    await h.close();
+  }
+});
 test("실제 거부된 조사의 실패 코드와 런북이 영구 지식으로 다음 입력에 도달한다", async () => {
   const h = await harness();
   try {

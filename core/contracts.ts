@@ -20,6 +20,7 @@ export interface Investigation {
   outcome: "completed" | "failed";
   toolCalls: ToolCall[];
   usageUnits: number;
+  telemetry?: { inputTokens: number; outputTokens: number; totalTokens: number };
 }
 export interface RunContext {
   runId: string;
@@ -41,7 +42,7 @@ export interface RunContext {
   deadlineAt: number;
 }
 export interface Investigator {
-  kind: "fixture";
+  kind: "fixture" | "openai_responses";
   investigate(context: RunContext, signal: AbortSignal): Promise<Investigation>;
 }
 export interface ProbeResult {
@@ -104,6 +105,10 @@ export interface EngineState {
   effects: Record<string, Effect>;
   outbox: Record<string, Page>;
   budgets: Record<string, { reserved: number; spent: number }>;
+  modelUsage: Record<
+    string,
+    { kind: string; inputTokens: number; outputTokens: number; totalTokens: number }
+  >;
   audit: { at: number; kind: string; incidentId?: string; detail: string }[];
 }
 export const emptyState = (): EngineState => ({
@@ -113,5 +118,6 @@ export const emptyState = (): EngineState => ({
   effects: {},
   outbox: {},
   budgets: {},
+  modelUsage: {},
   audit: [],
 });

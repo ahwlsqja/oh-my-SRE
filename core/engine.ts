@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { safeErrorCode } from "./errors.ts";
 import type { Journal } from "../storage/journal.ts";
 import { digest } from "../storage/journal.ts";
 import { validatePolicy, ensure, identifier, keys, type Policy } from "./policy.ts";
@@ -266,7 +267,7 @@ export class Engine {
       ]);
       const parsed = keys(
         result,
-        ["basedOnRevision", "outcome", "toolCalls", "usageUnits"],
+        ["basedOnRevision", "outcome", "toolCalls", "usageUnits", "telemetry"],
         "invalid_investigation",
       );
       ensure(
@@ -278,6 +279,20 @@ export class Engine {
         "invalid_investigation",
       );
       store.transaction((s) => {
+        if (result.telemetry) {
+          const t = keys(
+            result.telemetry,
+            ["inputTokens", "outputTokens", "totalTokens"],
+            "invalid_model_usage",
+          );
+          ensure(
+            [t.inputTokens, t.outputTokens, t.totalTokens].every(
+              (value) => Number.isSafeInteger(value) && (value as number) >= 0,
+            ),
+            "invalid_model_usage",
+          );
+          s.modelUsage[runContext.runId] = { kind: investigator.kind, ...result.telemetry };
+        }
         s.budgets[period].reserved--;
         s.budgets[period].spent++;
       });
@@ -332,18 +347,12 @@ export class Engine {
       store.transaction((s) => {
         if (s.incidents[id].activeRunId === runContext.runId) {
           s.incidents[id].investigation = controller.signal.aborted ? "timed_out" : "blocked";
-          s.incidents[id].failureCode =
-            error instanceof Error && /^[a-z_]+$/.test(error.message)
-              ? error.message
-              : "provider_failed";
+          s.incidents[id].failureCode = safeErrorCode(error);
           s.audit.push({
             at: this.now(),
             kind: "investigation_stopped",
             incidentId: id,
-            detail:
-              error instanceof Error && /^[a-z_]+$/.test(error.message)
-                ? error.message
-                : "provider_failed",
+            detail: safeErrorCode(error),
           });
         }
       });
@@ -444,7 +453,7 @@ export class Engine {
     const state = this.options.store.state;
     return {
       kind: "local_engine" as const,
-      investigator: "fixture" as const,
+      investigator: this.options.investigator.kind,
       observedAt: new Date(this.now()).toISOString(),
       incidents: Object.values(state.incidents),
       pages: Object.values(state.outbox),
