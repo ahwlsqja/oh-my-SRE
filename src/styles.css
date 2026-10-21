@@ -1,3 +1,95 @@
+.engine-context {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin: 18px 0 28px;
+  font-size: 12px;
+  line-height: 21px;
+  color: var(--sds-muted);
+}
+.engine-context > p:last-child {
+  width: 100%;
+}
+.engine-section {
+  margin-top: 28px;
+}
+.engine-list {
+  border-top: 1px solid var(--sds-border);
+  margin-top: 10px;
+}
+.engine-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 0;
+  font-size: 12px;
+  line-height: 21px;
+}
+.engine-list > .engine-row,
+.engine-incident {
+  border-bottom: 1px solid var(--sds-border);
+}
+.engine-copy {
+  min-width: 0;
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+.engine-copy h3 {
+  font-size: 13px;
+  font-weight: 530;
+}
+.engine-copy p,
+.engine-note,
+.engine-empty {
+  color: var(--sds-muted);
+  font-size: 12px;
+  line-height: 21px;
+}
+.engine-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.engine-note {
+  margin-top: 6px;
+}
+.engine-empty {
+  padding: 14px 0;
+}
+.engine-details {
+  padding-bottom: 12px;
+  font-size: 12px;
+  color: var(--sds-muted);
+}
+.engine-details summary {
+  cursor: pointer;
+}
+.engine-details .receipt-times {
+  color: var(--sds-text);
+  margin-block: 12px;
+}
+.engine-details dd {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.engine-audit {
+  border-top: 1px solid var(--sds-border);
+  margin-top: 36px;
+  padding: 14px 0;
+}
+@media (max-width: 760px) {
+  .engine-app .engine-row {
+    flex-wrap: wrap;
+  }
+  .engine-app .engine-tags {
+    max-width: 140px;
+  }
+  .engine-app .receipt-nav {
+    padding-inline: 20px;
+  }
+}
 .mono {
   font-family: var(--font-family-mono);
   font-size: 12px;

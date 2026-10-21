@@ -10,6 +10,7 @@ import {
 } from "./sds/components";
 import { demoCases, serviceObservations, type SreCase } from "./demo";
 import ReceiptApp, { SourceSelect } from "./ReceiptApp";
+import EngineApp from "./EngineApp";
 
 type Page = "inbox" | "status" | "connections";
 type Filter = "decision" | "investigation" | "all";
@@ -553,9 +554,8 @@ function DemoApp() {
 }
 
 export default function App() {
-  return new URLSearchParams(window.location.search).get("mode") === "receipt" ? (
-    <ReceiptApp />
-  ) : (
-    <DemoApp />
-  );
+  const mode = new URLSearchParams(window.location.search).get("mode");
+  if (mode === "engine") return <EngineApp />;
+  if (mode === "receipt") return <ReceiptApp />;
+  return <DemoApp />;
 }

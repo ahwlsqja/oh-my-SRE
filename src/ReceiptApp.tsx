@@ -2,20 +2,21 @@ import { useEffect, useState } from "react";
 import { Button, Select, Tag } from "./sds/components";
 import { projectSnapshot, type Snapshot, type Receipt } from "./providers/receipt";
 
-export function SourceSelect({ mode }: { mode: "demo" | "receipt" }) {
+export function SourceSelect({ mode }: { mode: "demo" | "receipt" | "engine" }) {
   return (
     <Select
       aria-label="자료 출처"
       value={mode}
       onValueChange={(value) => {
         const url = new URL(window.location.href);
-        if (value === "receipt") url.searchParams.set("mode", "receipt");
+        if (value === "receipt" || value === "engine") url.searchParams.set("mode", value);
         else url.searchParams.delete("mode");
         window.location.assign(url);
       }}
       options={[
         { value: "demo", label: "합성 예시" },
         { value: "receipt", label: "근거 스냅샷" },
+        { value: "engine", label: "로컬 엔진" },
       ]}
     />
   );

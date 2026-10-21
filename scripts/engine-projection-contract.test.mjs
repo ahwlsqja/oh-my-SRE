@@ -4,8 +4,8 @@ import { mkdtemp, writeFile, symlink, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createServer, request } from "node:http";
+import * as provider from "../server/engine-provider.mjs";
 
-const provider = await import("../server/engine-provider.mjs").catch(() => ({}));
 const fixture = () => ({
   kind: "local_engine",
   scope: "local_demo",
