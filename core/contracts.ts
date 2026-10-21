@@ -49,7 +49,7 @@ export interface ProbeResult {
   health: "healthy" | "degraded" | "unknown";
   lastOperation?: string;
 }
-export type Probe = (resourceKey: string) => Promise<ProbeResult>;
+export type Probe = (resourceKey: string, signal?: AbortSignal) => Promise<ProbeResult>;
 export interface Incident {
   id: string;
   resourceKey: string;

@@ -56,10 +56,12 @@ export function demoHttpProbe(
     options.maxBytes <= 0
   )
     throw new Error("invalid_probe_limit");
-  return async (resourceKey: string): Promise<ProbeResult> => {
+  return async (resourceKey: string, signal?: AbortSignal): Promise<ProbeResult> => {
     if (resourceKey !== "demo-worker") throw new Error("unknown_probe_target");
     const response = await fetch(url, {
-      signal: AbortSignal.timeout(options.timeoutMs),
+      signal: signal
+        ? AbortSignal.any([signal, AbortSignal.timeout(options.timeoutMs)])
+        : AbortSignal.timeout(options.timeoutMs),
       redirect: "error",
       cache: "no-store",
     });

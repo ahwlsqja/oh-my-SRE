@@ -7,6 +7,24 @@ import type { Policy } from "./policy.ts";
 import { ensure, keys } from "./policy.ts";
 import type { Registry } from "./registry.ts";
 const run = promisify(execFile);
+async function boundedProbe(probe: Probe, resource: string, timeoutMs: number) {
+  ensure(timeoutMs > 0, "probe_timeout");
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      probe(resource, controller.signal),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+          controller.abort();
+          reject(new Error("probe_timeout"));
+        }, timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
 export interface BrokerOptions {
   store: Journal<EngineState>;
   registry: Registry;
@@ -77,7 +95,11 @@ export class Broker {
       ),
       "effect_pending",
     );
-    const before = await probe(incident.resourceKey);
+    const before = await boundedProbe(
+      probe,
+      incident.resourceKey,
+      Math.min(book.timeoutMs, incident.activeRunDeadlineAt! - now()),
+    );
     ensure(
       before.resourceKey === incident.resourceKey &&
         before.health === "degraded" &&
@@ -143,10 +165,10 @@ export class Broker {
       return store.state.effects[id];
     }
     this.options.fault?.("after_execute");
-    await this.reconcile(id);
+    await this.reconcile(id, incident.activeRunDeadlineAt);
     return store.state.effects[id];
   }
-  async reconcile(id?: string): Promise<void> {
+  async reconcile(id?: string, deadlineAt?: number): Promise<void> {
     const { store, probe } = this.options,
       now = this.options.now ?? Date.now;
     for (const effect of Object.values(store.state.effects).filter(
@@ -155,7 +177,16 @@ export class Broker {
       let verified = false;
       let proofDigest: string | undefined;
       try {
-        const p = await probe(effect.resourceKey);
+        const limit = this.options.registry.get(effect.runbookRef.id).timeoutMs;
+        const p = await boundedProbe(
+          probe,
+          effect.resourceKey,
+          Math.min(
+            limit,
+            this.options.policy.runDeadlineMs ?? limit,
+            deadlineAt === undefined ? limit : Math.max(0, deadlineAt - now()),
+          ),
+        );
         verified =
           p.resourceKey === effect.resourceKey &&
           p.health === "healthy" &&
