@@ -2,7 +2,7 @@
 
 **필요한 판단만, 분명하게.**
 
-근거와 불확실성을 함께 읽는 SRE 인터페이스의 초기 프론트엔드 프로토타입입니다. 관측 도구·모델 공급자·인증 방식을 교체할 수 있는 제품을 목표로 합니다. 현재는 새로 작성한 **합성 데모**이며 실제 운영 시스템이나 모델에 연결되지 않습니다.
+근거와 불확실성을 함께 읽는 SRE 인터페이스의 초기 프로토타입입니다. 기본 화면은 **합성 데모**입니다. 별도의 로컬 스냅샷 모드는 저장소 밖의 정규화된 receipt 파일을 읽어 단계별 근거와 미확인 범위를 표시합니다.
 
 ## 지금 사용할 수 있는 것
 
@@ -23,6 +23,18 @@ pnpm dev
 
 기본 주소는 `http://127.0.0.1:5173`입니다. 정적 배포용 결과는 `pnpm build`로 `dist/`에 생성합니다. 실제 운영 연결과 호스팅은 별도 설정이 필요합니다.
 
+## 근거 스냅샷
+
+서버 실행 환경의 `OMS_RECEIPT_PATH`를 저장소 밖 JSON 일반 파일의 절대 경로로 지정하고 `pnpm dev` 또는 `pnpm preview`를 실행합니다. 화면 하단의 자료 출처를 바꾸거나 `/?mode=receipt`로 엽니다. 이 endpoint는 Vite 개발·preview 서버에서만 제공하며 정적 호스팅에는 포함되지 않습니다.
+
+- `/api/receipts`는 고정 파일만 읽는 GET입니다. 최대 128 KiB, 엄격한 키·타입·enum, 로컬 Host와 같은 Origin을 검사합니다. 쿼리로 파일을 선택하거나 CORS로 다른 출처에서 읽을 수 없습니다.
+- 원래 `observedAt`부터 TTL을 계산합니다. 파일을 다시 읽거나 `capturedAt`을 바꿔도 만료가 연장되지 않습니다. 미래 시각과 1초 미만·24시간 초과 TTL은 거부합니다.
+- 단계 확인은 전체 서비스 정상·무유실·회복을 뜻하지 않습니다. Raw 집계, Flink/Fact, 제품 HTTP 응답, SRE 운영 HTTP 응답은 별도 claim입니다.
+- 사건·비용·모델 실행·기간별 이력이 없으면 미제공으로 표시합니다. 읽기 실패 때도 합성 예시로 자동 전환하지 않습니다.
+- 브라우저는 자격증명 없이 같은 출처의 로컬 endpoint만 읽습니다. 이 provider에는 운영 API proxy·직접 DB 연결·자격증명 수집이 없습니다.
+
+입력 예제는 완전한 합성 자료인 [receipt.example.json](docs/receipt.example.json), 허용 계약은 [receipt.ts](src/providers/receipt.ts)입니다. 원문·운영 주소·고객 식별자·자격증명은 파일에 넣지 않습니다. 파일은 비공개 디렉터리에 두고 원천·범위·정규화 과정을 별도로 보관하세요. source/evidence digest는 추적용이며 서명이나 원천의 진위를 검증하지 않습니다.
+
 ## 검증
 
 ```sh
@@ -32,6 +44,7 @@ pnpm format:check
 pnpm tokens:check
 pnpm test:sds
 pnpm test:uptime
+pnpm test:receipt
 pnpm build
 pnpm exec playwright install chromium
 pnpm test

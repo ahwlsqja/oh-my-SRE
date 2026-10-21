@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "typecheck": "tsc --noEmit",
-    "lint": "oxlint src tests scripts vite.config.ts playwright.config.ts",
+    "lint": "oxlint src tests scripts server vite.config.ts playwright.config.ts",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
     "build": "pnpm tokens:check && pnpm typecheck && vite build",
@@ -19,7 +19,8 @@
     "tokens:generate": "node scripts/generate-sds.mjs",
     "tokens:check": "node scripts/generate-sds.mjs --check",
     "test:sds": "node --test scripts/sds-contract.test.mjs",
-    "test:uptime": "node --experimental-strip-types --test scripts/uptime-contract.test.mjs"
+    "test:uptime": "node --experimental-strip-types --test scripts/uptime-contract.test.mjs",
+    "test:receipt": "node --experimental-strip-types --test scripts/receipt-contract.test.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "1.3.1",

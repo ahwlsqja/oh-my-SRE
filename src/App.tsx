@@ -9,6 +9,7 @@ import {
   statusSemantics,
 } from "./sds/components";
 import { demoCases, serviceObservations, type SreCase } from "./demo";
+import ReceiptApp, { SourceSelect } from "./ReceiptApp";
 
 type Page = "inbox" | "status" | "connections";
 type Filter = "decision" | "investigation" | "all";
@@ -326,7 +327,7 @@ function ConnectionsPage() {
   );
 }
 
-export default function App() {
+function DemoApp() {
   const [page, setPage] = useState<Page>("inbox");
   const [filter, setFilter] = useState<Filter>("decision");
   const [cases, setCases] = useState(() => structuredClone(demoCases));
@@ -502,6 +503,7 @@ export default function App() {
         {page === "status" && <StatusPage />}
         {page === "connections" && <ConnectionsPage />}
         <footer className="page-footer">
+          <SourceSelect mode="demo" />
           <Button
             variant="ghost-muted"
             size="small"
@@ -547,5 +549,13 @@ export default function App() {
         </Dialog.Content>
       </Dialog.Root>
     </div>
+  );
+}
+
+export default function App() {
+  return new URLSearchParams(window.location.search).get("mode") === "receipt" ? (
+    <ReceiptApp />
+  ) : (
+    <DemoApp />
   );
 }

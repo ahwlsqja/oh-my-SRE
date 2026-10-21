@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "capturedAt": "2026-01-01T12:00:00.000Z",
+  "receipts": [
+    {
+      "sourceKind": "deployment_readback",
+      "claim": "deployment_binding",
+      "verdict": "verified",
+      "observedAt": "2026-01-01T11:59:00.000Z",
+      "ttlSeconds": 300,
+      "scopeDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "evidenceDigest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "coverage": "scoped",
+      "limitations": ["service_health_unverified", "recovery_unverified"],
+      "counters": { "checksPassed": 5 }
+    }
+  ]
+}
