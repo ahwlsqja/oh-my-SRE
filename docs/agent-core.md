@@ -1,22 +1,26 @@
 # 범용 SRE 에이전트 엔진 설계
 
-상태: **설계 초안·미구현**. 기준: 2026-10-21, 공개 `ea0573da36f1bb86945cb12e26f195dc92e9806b`. 독자: 제품·엔진·provider 구현자.
+상태: **첫 로컬 slice 구현·검증 / 범용 확장 설계**. 기준일: 2026-10-21. 설계 기준 ref: 공개 `ea0573da36f1bb86945cb12e26f195dc92e9806b`. 독자: 제품·엔진·provider 구현자. 현재 구현의 정본은 연결된 코드·계약 테스트이며 목표 계약과 구분한다.
 
 **제품 목표는 여러 관측 도구와 모델·agent runtime을 조합해 P1/P2를 자율 처리하고, P0에서만 사람을 호출하는 엔진이다.** 심각도, 실행 허용, 알림은 독립된 계약이다. 현재의 로컬 receipt 뷰어는 입력·표현 adapter 중 하나다.
 
 ## 1. 현재와 목표
 
-| 구분      | 현재 확인                                                | 합의 목표 / 제안                                                   |
-| --------- | -------------------------------------------------------- | ------------------------------------------------------------------ |
-| 화면      | 합성 판단함·SDS·상태 이력 예시, 별도 실제 receipt 스냅샷 | 엔진의 사건·조사·행동·회복 projection                              |
-| 관측      | 저장소 밖 고정 파일의 엄격한 receipt reader              | metrics/logs/events/probes 등 provider 조합                        |
-| 조사      | 실제 agent loop·모델 호출 없음                           | 예산과 재조사 조건 아래 모델 또는 agent runtime 호출               |
-| 처리      | 외부 행동·알림·지속 사건 저장 없음                       | 정책에 따른 자율 처리, P0 알림, 감사·재시작 복구                   |
-| 실행 권한 | 실제 executor 미구현                                     | 조사+사전에 허용된 복구 실행. 등록 런북·설치 정책 안에서 자율 처리 |
+| 구분      | 현재 확인                                                                                                 | 확장 목표                                      |
+| --------- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| 화면      | 합성 UI/SDS·receipt reader·읽기 전용 로컬 engine projection                                               | 실제 설치의 지속 관측·제어 권한 분리           |
+| 관측      | 합성 Observation 입력과 bounded 로컬 HTTP probe ([계약](../scripts/core-probe.test.mjs))                  | 외부 metrics/logs/events provider              |
+| 조사      | fixture 및 Responses 단일 tool 제안 adapter, localhost stub 검증 ([계약](../scripts/core-model.test.mjs)) | 실제 모델 연결·agent CLI·다단계 tool 결과 대화 |
+| 처리      | 실제 로컬 정적 script·독립 probe·journal·wiki·P0 로컬 outbox ([CLI 계약](../scripts/core-cli.test.mjs))   | 외부 운영 runbook·전송 채널                    |
+| 실행 권한 | 등록 version/hash·args·effect/target·deadline 검사 ([broker](../scripts/core-broker.test.mjs))            | 설치별 검토·승격 시스템·외부 runtime 제한 집행 |
 
-이 문서는 엔진 목표 계약의 초안이다. [기존 PRD](PRD.md)의 합성 화면 단계·수동 실행 제안은 구현 이력이며, 아래의 범용 엔진 정책을 고정하지 않는다. 화면 표현은 [DESIGN.md](../DESIGN.md)와 기존 SDS를 재사용한다. 특정 회사의 환경·복구 설정·서비스 명칭·운영 수치는 제품 정책에 포함하지 않는다.
+이 문서는 엔진 목표 계약과 구현된 첫 slice의 경계를 함께 기록한다. [기존 PRD](PRD.md)의 합성 화면 단계·수동 실행 제안은 구현 이력이며, 아래의 범용 엔진 정책을 고정하지 않는다. 화면 표현은 [DESIGN.md](../DESIGN.md)와 기존 SDS를 재사용한다. 특정 회사의 환경·복구 설정·서비스 명칭·운영 수치는 제품 정책에 포함하지 않는다.
 
 **사용자 확정:** P1/P2는 조사와 사전에 허용된 복구 실행까지 사람 호출 없이 처리한다. P0는 사람을 호출하면서 조사를 계속한다. 허용 런북이 없거나 예산이 끝나면 근거·중단 이유를 남기며 임의 실행이나 P0 승격으로 우회하지 않는다. 실행 가능한 런북과 그 개선안의 승격은 서로 다른 권한이다.
+
+![엔진 목표 구조](assets/agent-core.png)
+
+위 그림은 목표 구조다. 현재 검증 범위는 로컬 worker·합성 조사기·HTTP stub·단일 owner journal이며 실제 운영/LLM/MCP 연결을 뜻하지 않는다.
 
 ## 2. 엔진이 책임지는 흐름
 
@@ -54,7 +58,7 @@ provider는 `capabilities`를 선언하고 contract test로 검증한다. 선언
 
 ## 4. 코어 도메인과 typed 계약
 
-다음은 **제안된 핵심 TypeScript 계약**이며 현재 export나 구현이 아니다. ID·기능명은 설치가 등록한 값이다. 모든 외부 payload는 runtime validation, 크기/개수 상한, 버전 검사를 거친다.
+다음은 **확장 목표의 TypeScript 계약 예시**다. 현재 로컬 schema는 [core/contracts.ts](../core/contracts.ts), 정책은 [policy.ts](../core/policy.ts)가 정본이며 아래 필드 전체를 이미 지원하는 것은 아니다. ID·기능명은 설치가 등록한 값이다. 모든 외부 payload는 runtime validation, 크기/개수 상한, 버전 검사를 거친다.
 
 ```ts
 type Severity = "P0" | "P1" | "P2" | "unknown";
@@ -140,7 +144,7 @@ Observation은 범용 envelope다. 기존 [receipt reader](../src/providers/rece
 
 ## 5. 지속 상태와 조사 제어
 
-엔진은 아래 상태를 소유한다. provider 내부 세션은 조사 실행의 참조일 뿐 사건의 정본이 아니다.
+아래 표는 목표 소유 계약이며 현재 전이와 필드는 [엔진](../core/engine.ts)·[계약](../core/contracts.ts) 및 [상태 테스트](../scripts/core-engine.test.mjs)에 한정된다. 엔진이 사건 정본을 소유한다. provider 내부 세션은 조사 실행의 참조일 뿐 사건의 정본이 아니다.
 
 | 엔진 상태 | 저장할 의미                                                                     | 전이 guard                                                                        |
 | --------- | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
@@ -153,7 +157,7 @@ Observation은 범용 envelope다. 기존 [receipt reader](../src/providers/rece
 
 관측 없음·오류·만료는 `missing/failed/stale`로 남긴다. 상태 판정에 필요한 근거를 잃으면 unknown이지 회복이 아니다. 기존 P0에 새 데이터가 없다는 이유로 P0를 해제하지 않는다. 장기 지속은 새 원천 이벤트가 없어도 `dueAt`을 통해 재평가할 수 있으나 같은 poll마다 재조사하지 않는다. 회복 후보와 악화는 각각 새로운 근거 revision을 만든다. 늦게 끝난 모델 결과는 `basedOnRevision`이 오래되면 최신 사건을 덮지 않고 이력에 보존한다.
 
-예산은 설치·사건·기간별 비용, token/tool call, wall time, 시도 수를 함께 제한한다. 정확한 상한과 기간은 설치 정책이며 아직 운영 기본 수치를 정하지 않았다. 예약은 호출 전에 차감하고 실제 사용량과 정산한다. 취소·timeout·프로세스 중단의 미확정 비용을 즉시 환불하지 않는다. 사용량을 알 수 없는 provider는 비용이 확인됐다고 기록하지 않으며, 강제할 수 있는 token/시간 제한과 해당 설치의 정책을 만족할 때만 실행한다. child agent도 같은 예약을 공유하며 별도 무제한 예산을 만들지 않는다.
+**현재 예산은 기간별 호출 횟수 예약과 사건별 기간 시도 상한이다.** `maxAttemptsPerIncidentPerPeriod`는 새 기간+dueAt에서 재개하며 lifetime `attempts`는 감사용이다. 실제 token usage는 telemetry로만 보존하고 금액/token 예산은 집행하지 않는다. 미응답 호출의 예약을 환불하지 않는 경계를 [재시작](../scripts/core-crash.test.mjs)·[모델 오류](../scripts/core-engine.test.mjs)에서 검증한다. 확장 목표는 설치·사건·기간별 비용, token/tool call, wall time, 시도 수를 함께 제한하는 것이다. 정확한 상한과 기간은 설치 정책이며 아직 운영 기본 수치를 정하지 않았다. 예약은 호출 전에 차감하고 실제 사용량과 정산한다. 취소·timeout·프로세스 중단의 미확정 비용을 즉시 환불하지 않는다. 사용량을 알 수 없는 provider는 비용이 확인됐다고 기록하지 않으며, 강제할 수 있는 token/시간 제한과 해당 설치의 정책을 만족할 때만 실행한다. child agent도 같은 예약을 공유하며 별도 무제한 예산을 만들지 않는다.
 
 ## 6. 심각도·권한·알림의 독립성
 
@@ -187,7 +191,7 @@ MCP/AgentSkills는 서로 대체하는 데이터베이스가 아니다. **canoni
 
 공식 [Agent Skills 명세](https://agentskills.io/specification)는 `SKILL.md`의 `name`·`description`과 선택적인 `scripts/`·`references/`·`assets/` 구조를 정의한다. `allowed-tools`는 실험 필드이고 agent별 지원이 다르므로 권한 집행의 근거로 삼지 않는다. 본 제품의 Skills export는 절차·등록 버전·broker 호출을 안내한다. 실행 payload는 canonical bundle에서만 제공하며, 문서 속 script를 직접 실행해 broker를 건너뛰지 않는다. Git registry·hash·promotion은 위 표의 **제품 설계**이고 MCP/Skills가 정한 기능으로 주장하지 않는다.
 
-제안 경로는 `runbooks/<id>/manifest.json`, `args.schema.json`, `scripts/`, `tests/`, `README.md`이며, `wiki/incidents/`·`wiki/patterns/`는 설치의 지식 저장소다. 검색 index는 Git 내용에서 재생성할 수 있는 파생물이고 승인 정본이 아니다. 설치 wiki가 공개 저장소여야 하는 것은 아니며 고객 데이터·secret·원문 로그를 OSS 저장소로 자동 게시하지 않는다.
+현재 정적 예제 구조는 `runbooks/<id>/manifest.json`, `args.schema.json`, `scripts/`, `tests/`, `README.md`이며, `wiki/incidents/`·`wiki/patterns/`는 설치의 지식 저장소다. 검색 index는 Git 내용에서 재생성할 수 있는 파생물이고 승인 정본이 아니다. 설치 wiki가 공개 저장소여야 하는 것은 아니며 고객 데이터·secret·원문 로그를 OSS 저장소로 자동 게시하지 않는다.
 
 아래는 **설명용 합성 manifest**다. 실제 파일·등록 기능은 아직 없다.
 
@@ -211,7 +215,9 @@ MCP/AgentSkills는 서로 대체하는 데이터베이스가 아니다. **canoni
 
 실행 registry는 이 manifest·JSON Schema·scripts·의존성 lock으로 계산한 결정론적 bundle digest와 승격된 Git revision을 고정한다. 설치 allowlist는 `runbookId+version+digest+effect+target scope`를 허용한다. broker는 typed args를 검증하고 대상 scope·최신 사전조건·예산·실행 동시성·grant 만료를 검사한다. LLM이 제안한 임의 script 경로·환경변수·명령 문자열은 실행 입력이 아니다. 실행 직전 digest를 다시 대조해 문서/인덱스의 오래된 참조와 파일 교체를 차단한다.
 
-**개선 경로:** 사건의 근거로 wiki 갱신·runbook draft 작성 → schema/정적 검사·테스트·sandbox 검증 → 지정 reviewer 검토 → 권한 있는 registry owner의 promotion → 버전 hash/allowlist 갱신. 새 effect·대상 확대·권한 확대는 운영자 승인 대상이다. 기존 범위 안의 개선도 설치가 정한 검토·승격 절차를 거친 버전만 실행한다. 모델의 자신감이나 같은 모델의 셀프 리뷰만으로 실행 권한을 넓히지 않는다.
+현재는 사건/실패 요약의 자동 기록·exact failureClass 검색·텍스트 draft 분리·metadata 파생까지 구현했다. 별도 의미 검색·자동 코드 수정·운영 승격 서비스는 미구현이다. Git wiki는 marker가 있는 engine-owned 전용 repo만 운용하며 변경한 지식 파일만 commit한다([계약](../scripts/core-wiki.test.mjs)).
+
+**확장 개선 경로:** 사건의 근거로 wiki 갱신·runbook draft 작성 → schema/정적 검사·테스트·sandbox 검증 → 지정 reviewer 검토 → 권한 있는 registry owner의 promotion → 버전 hash/allowlist 갱신. 새 effect·대상 확대·권한 확대는 운영자 승인 대상이다. 기존 범위 안의 개선도 설치가 정한 검토·승격 절차를 거친 버전만 실행한다. 모델의 자신감이나 같은 모델의 셀프 리뷰만으로 실행 권한을 넓히지 않는다.
 
 **실행과 개선은 별도 권한:** 이미 승인된 P1/P2 runbook을 실행하는 agent가 registry를 수정·승격할 권한까지 갖는 것은 아니다. 학습 결과가 실패한 런북을 자동 교체해 즉시 실행하지 않는다. 이전 버전·기각 이유·실패 테스트를 보존하고, 재발 시 어떤 근거와 버전으로 행동했는지 추적한다. 회복을 검증하지 못한 경험은 성공 패턴으로 승격하지 않는다.
 
@@ -255,36 +261,32 @@ MCP/AgentSkills는 서로 대체하는 데이터베이스가 아니다. **canoni
 
 ## 10. 첫 작동 vertical slice
 
-**제안:** 로컬 Node 엔진에서 합성 입력을 실제 지속 상태·예산·재조사·알림 outbox까지 처리한다. 기존 화면은 그 projection을 읽는다. 다른 운영 환경이나 특정 데이터베이스가 있어야 작동하는 구조로 시작하지 않는다.
+**현재 구현:** 로컬 Node 엔진에서 합성 입력을 실제 지속 상태·예산·재조사·알림 outbox까지 처리한다. 기존 화면은 그 projection을 읽는다. 다른 운영 환경이나 특정 데이터베이스가 있어야 작동하는 구조로 시작하지 않는다.
 
-1. `json-events` observation provider로 버전·범위가 있는 fixture를 받아 새 엔진 루프를 구동한다. `http-probe`는 로컬 테스트 서버에 연결해 timeout·빈 결과·freshness를 검증한다. 기존 receipt reader는 별도 입력 adapter로 재사용한다.
-2. investigator 계약에 deterministic fixture adapter와 첫 `openai-compatible` model adapter를 연결한다. fixture는 재현 가능한 테스트용이며 실제 모델 실행으로 표시하지 않는다. 실제 API adapter는 공식 계약 확인과 사용자가 구성한 인증 아래 명시적으로 실행하는 smoke에서 검증한다. 그 smoke 전에는 ‘실제 모델 연결 검증’을 완료했다고 하지 않는다.
+1. CLI가 버전·freshness가 있는 합성 Observation을 `Engine.ingest`에 전달한다. 실제 로컬 HTTP probe는 script와 독립적으로 파일 상태/operation을 읽는다. 외부 json-events collector와 receipt→core 자동 변환은 아직 연결하지 않았다.
+2. investigator 계약에 deterministic fixture adapter와 `OpenAIResponsesInvestigator`를 구현했다. fixture는 재현 가능한 테스트용이며 실제 모델 실행으로 표시하지 않는다. Responses adapter는 공식 wire로 만든 로컬 stub→core→broker→wiki와 오류/크기/abort/redirect/args를 검증했다. API key·실모델 live 호출은 0이며 실제 인증 연결은 별도 smoke가 필요하다. 응답 도구 제안 한 번만 처리하고 후속 function_call_output 대화는 아직 지원하지 않는다.
 3. 단일 프로세스 `CoreStore`는 우선 로컬 append journal로 구현한다. 한 transaction record 안에 사건·예약·outbox 변경을 기록하고 flush 성공 뒤 외부 효과를 시작한다. transaction ID 재생은 멱등이어야 하며 시작 시 단일 owner 잠금을 획득한다. 손상/불완전 tail은 복구 전 효과를 멈춘다. 분산 owner·다중 호스트 원자성은 이 slice 범위 밖이다.
 4. scheduler는 persisted `dueAt`·fake clock·시도/기간 예산을 사용한다. 재시작 후 같은 입력은 새 조사나 비용 예약을 만들지 않는다.
 5. canonical runbook 1개를 manifest+JSON Schema+정적 Node script+tests+문서로 등록한다. 로컬 sandbox의 합성 worker 상태를 바꾸는 사전 허용 script를 실제로 실행하고 별도 HTTP probe로 회복을 검증한다. unknown/거부/실패는 fake executor로 주입한다. 외부 운영 리소스의 복구는 이 slice 범위 밖이다.
 6. Git/Markdown wiki에 사건 요약·근거 참조·런북 버전·실패 학습을 기록하고 다음 같은 사례에서 검색해 재사용한다. 새 런북 수정안은 draft로만 생성하며 테스트/검토/승격 전 runtime registry에 노출하지 않는다. MCP/AgentSkills는 우선 metadata와 tool contract를 생성해 정본 일치를 검증한다.
 7. notification은 로컬 durable outbox와 fake provider로 P0 page/ACK/update/recovery를 검증한다. 첫 외부 채널 adapter는 그다음 범위다. UI에 실제 engine run과 합성 입력/fixture investigator 여부를 명시한다.
 
-예상 모듈은 `core/`(사건·정책·예산·scheduler), `providers/`(관측·investigator·action·알림), `storage/`(journal), `projection/`이다. 이는 경계 제안이며 아직 파일을 만들지 않는다. runtime provider의 공식 CLI integration과 두 번째 실제 모델·관측 시스템으로 교체 가능성을 증명하는 작업은 뒤따르는 인수다. 첫 slice 성공을 모든 provider 지원으로 확대하지 않는다.
+구현 모듈은 `core/`(사건·정책·예산·scheduler), `providers/`(관측·investigator·action·알림), `storage/`(journal), `projection/`이다. 스케줄러는 호출자가 구동하는 `tick()` API이며 상시 daemon은 미연결이다. 현재 registry는 안전한 상대 `.mjs` entrypoint와 helper·schema·문서·tests를 포함한 전체 bundle을 hash하고 symlink를 거부한다. 인자 JSON Schema는 object+string const subset만 지원한다. script는 신뢰된 운영자 승인 코드이며 비신뢰 코드를 격리하는 sandbox를 제공하지 않는다. runtime provider의 공식 CLI integration과 두 번째 실제 모델·관측 시스템으로 교체 가능성을 증명하는 작업은 뒤따르는 인수다. 첫 slice 성공을 모든 provider 지원으로 확대하지 않는다.
 
-### 10.1 테스트 완료 기준
+### 10.1 현재 인수와 재현
 
-- [ ] 입력 duplicate·동일 의미 poll·의미 변화·지속 임계·악화·회복의 호출 횟수와 사건 revision이 기대대로 다르다.
-- [ ] empty/error/stale가 healthy·회복으로 바뀌지 않으며 오래된 모델 결과가 최신 사건을 덮지 않는다.
-- [ ] 비용/시도 예약이 경합·timeout·cancel·재시작에서도 상한을 넘지 않는다. 미확정 사용량은 보존된다.
-- [ ] 모델의 임의 runbook·scope 확대·관측 속 지시를 실행하지 않는다. 허용 행동만 별도 grant로 통과한다.
-- [ ] wiki 검색 결과·draft skill·미승격 script가 실행 registry를 변경하지 않는다. stale digest·위조 version·JSON Schema 밖 args를 거부한다.
-- [ ] canonical manifest에서 만든 MCP/AgentSkills export가 같은 version/digest/args contract를 보존한다. 실행 권한 검사는 broker에 남는다.
-- [ ] 사전 허용된 로컬 정적 script → 별도 probe → 검증 결과의 wiki 저장 → 다음 사건 검색까지 반복 가능하다. 새 effect/권한 확대는 promotion 승인이 없으면 실행되지 않는다.
-- [ ] action applied와 independently verified를 구분하고 missing probe는 unverified를 유지한다.
-- [ ] P1/P2의 budget/permission blocked가 P0/page를 만들지 않는다. P0는 모델 실패와 무관하게 page 의도를 만든다.
-- [ ] P0 중복·ACK·악화·회복·새 episode와 외부 응답 손실을 검증한다. 재시작 후 action/page blind retry가 없다.
-- [ ] 동일 fixture를 provider 계약을 만족하는 두 구현으로 교체해 core 코드 변경 없이 같은 사건 전이를 얻는다.
-- [ ] 프로세스 강제 종료 지점을 journal flush 전/후·효과 요청 전/후에 주입하고 재시작 후 상태·예산·효과 의도를 대조한다.
-- [ ] 실제 모델 adapter는 별도 opt-in smoke 결과·auth 방식·usage·실패를 기록한다. fixture 성공과 별도 표시한다.
-- [ ] 기존 SDS·receipt 계약·desktop/mobile 회귀를 통과하며 UI가 합성/실제 실행과 미제공 범위를 보존한다.
+- [x] [엔진 계약](../scripts/core-engine.test.mjs): 중복·동일 poll·의미 변화·지속 dueAt, 같은 기간 재시작/다음 기간 재개, P0/ACK/예산 분리, 과거 관측 거부, stale 모델, 실제 실패 학습과 wiki 런북 선택.
+- [x] [broker](../scripts/core-broker.test.mjs)·[probe](../scripts/core-probe.test.mjs): typed args/권한/hash, 동시 의도1개, persisted deadline, 무응답 시간 제한, unknown→다음 probe→verified와 script1회.
+- [x] [SIGKILL](../scripts/core-crash.test.mjs)·[journal](../scripts/core-journal.test.mjs): 의도 직후·효과 직후·모델 대기 중 강제 종료와 재시작, 미확정 효과/예약 보존, 단일 owner·flush·손상 tail 거부.
+- [x] [wiki](../scripts/core-wiki.test.mjs)·[registry](../scripts/core-registry.test.mjs): 영구 Git 기록·재검색, 실패/draft와 실행 분리, 전용 repo·파일 한정 commit, helper 포함 hash 거부.
+- [x] [metadata](../scripts/core-tools.test.mjs): 같은 정본의 MCP tool schema/AgentSkills와 broker 실제 호출. 실제 MCP transport/client 연결 검증은 아님.
+- [x] [모델](../scripts/core-model.test.mjs): Responses strict tool 제안·재검증·token telemetry와 bounded localhost HTTP stub. 실제 모델·credential·다른 vendor 검증은 아님.
+- [x] [CLI](../scripts/core-cli.test.mjs): P1 실제 로컬 복구→wiki→다음 선택, P2 억제, P0 page 의도/ACK/조사 지속, 저장소 밖 projection과 resume 중복 효과0.
+- [ ] 외부 provider/모델/운영 runbook·알림 채널, 금액/token 예산, 다중 provider 충돌, 분산 owner·전원 손실, 일반 JSON Schema·의미 검색·자동 승격은 후속 인수다.
 
-문서 검토 → 첫 adapter·런북 manifest·설치 allowlist 계약 확정 → TDD 구현 → 로컬 slice 인수 → 선택한 실제 provider의 명시적 연결 검증은 서로 다른 단계다. 이 문서 작성으로 엔진 구현·운영 복구·모델/채널 연결이 완료되지 않는다.
+`pnpm test:core`로 재현한다. `pnpm engine:demo`는 private temp workspace에 journal/Git wiki/파생 metadata/projection/receipt를 남긴다. `--workspace <이전 경로> --scenario resume`은 새 효과를 만들지 않고 대조한다. `crash-after-execute`는 자체 프로세스를 SIGKILL하며 `resume --recover-stale-lock`은 죽은 owner를 확인한 뒤 명시적으로 잠금을 회수한다. P0 outbox는 전송 의도이고 외부 page는 하지 않는다.
+
+설계 승인, 로컬 slice 인수, 선택한 실제 provider의 인증 연결, 운영 활성화는 별도 단계다. 코드의 한도·worker ID·가짜 시간은 합성 설치 설정이며 운영 기본값으로 권고하지 않는다. 파일 sync는 OS/device에 의존하고 네트워크 파일시스템·전원 손실을 포함한 exactly-once를 보장하지 않는다.
 
 ## 11. 남은 결정과 위험
 

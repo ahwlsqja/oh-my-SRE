@@ -4,10 +4,11 @@
 
 관측 provider와 모델·agent 실행 provider를 조합하는 범용 SRE 에이전트 엔진을 목표로 합니다. P1/P2는 조사와 사전에 허용된 복구를 자율 처리하고, P0만 사람을 호출하면서 조사를 계속하는 방향입니다. 영구 wiki의 경험을 검색하고 검토·승격된 정적 런북을 typed 인자로 실행하도록 설계합니다. 구체 계약과 첫 구현 범위는 [에이전트 코어 설계](docs/agent-core.md)에 정리했습니다.
 
-**현재 구현은 UI/SDS와 읽기 전용 receipt 스냅샷 provider입니다. 실제 agent loop·모델/runtime provider·지속 사건 엔진·자동 복구·외부 알림은 아직 없습니다.** 기본 화면은 합성 데모이며 별도 스냅샷 모드는 저장소 밖 파일의 단계별 근거를 표시합니다.
+**현재는 자체 로컬 worker로 검증한 첫 코어 slice입니다.** 사건·기간별 호출 예산·재조사·journal·등록 런북·독립 probe·Git wiki·P0 로컬 outbox가 동작합니다. 기본 investigator는 합성 fixture입니다. Responses adapter는 로컬 HTTP stub으로 검증했으며 실제 모델·외부 agent runtime·운영 복구·외부 알림은 연결하지 않았습니다.
 
 ## 지금 사용할 수 있는 것
 
+- **로컬 엔진:** CLI가 정적 script로 자체 worker를 복구하고 새 HTTP probe로 확인한 뒤 Git wiki에 기록합니다. 다음 사건에서 실제 성공·실패 요약과 승인된 런북을 다시 검색합니다. 화면은 그 실행 기록의 읽기 전용 projection입니다.
 - **판단함:** 구체적인 사람 결정이 있는 사건을 먼저 표시하고 조사 상태·전체 목록으로 필터링합니다.
 - **사건 상세:** 상황·확인·미확인·다음 행동·필요한 결정, 근거, 모델별 합성 기록, 최신 이력과 과거 더 보기.
 - **상태:** 서비스별 관측 상태·90일 예시 이력·일별 상세·에이전트의 예시 행동·미확인 범위. 관측 도착을 서비스 정상이나 회복으로 확정하지 않습니다.
@@ -24,6 +25,27 @@ pnpm dev
 ```
 
 기본 주소는 `http://127.0.0.1:5173`입니다. 정적 배포용 결과는 `pnpm build`로 `dist/`에 생성합니다. 실제 운영 연결과 호스팅은 별도 설정이 필요합니다.
+
+## 첫 엔진 실행
+
+```sh
+pnpm engine:demo
+```
+
+저장소 밖 새 private workspace를 만들고 P1 복구·wiki 재사용·P2 중복 억제·P0 page 의도/ACK/조사 지속을 실행합니다. 마지막 JSON에 workspace와 `demo-receipt.json`, `engine-projection.json` 위치가 나옵니다. 입력·investigator·논리 시계는 합성이며 script 적용·로컬 HTTP probe·Git 기록은 실제입니다. 금액이나 token 예산을 집행하지 않으며 예산은 기간별 호출 횟수와 사건별 기간 시도 상한입니다. 실제 token usage는 별도 telemetry로 보존합니다.
+
+```sh
+pnpm engine:demo --workspace /path/to/private-workspace --scenario resume
+OMS_ENGINE_PROJECTION_PATH=/path/to/private-workspace/engine-projection.json pnpm dev
+```
+
+`/?mode=engine`에서 생성 시각과 사건을 읽습니다. 열린 P0는 판단함, P1/P2·종료 사건은 상태에 표시합니다. P0 outbox는 로컬 호출 의도이며 외부 전송이 아닙니다. 화면에서 실행·ACK·모델 호출을 하지 않습니다. 한 번의 CLI 시나리오와 `tick()` API를 제공하며 상시 실행 daemon은 아직 없습니다.
+
+자체 demo workspace의 강제 종료 복구를 시험하려면 새 workspace로 `--scenario crash-after-execute`를 실행합니다. 이 합성 시나리오는 script 적용 직후 자신의 프로세스를 SIGKILL로 끝냅니다. 같은 경로에서 `--scenario resume --recover-stale-lock`로 죽은 PID를 확인한 뒤 잠금을 명시적으로 회수하고 독립 probe로 결과를 대조합니다. 결과가 불명확하면 보류하며 script를 무조건 재실행하지 않습니다.
+
+런북은 운영자가 신뢰하고 승인한 정적 코드입니다. 버전·전체 bundle hash·args subset·effect·target allowlist를 검사하지만 비신뢰 코드를 OS에서 격리하는 sandbox는 아닙니다. 임의 shell·미승격 draft를 실행하지 않습니다. Git wiki는 engine-owned 전용 저장소만 자동 운용하며 source registry를 승격하는 권한은 없습니다.
+
+`OpenAIResponsesInvestigator`는 모델명·HTTPS endpoint·credential resolver·최대 출력/요청/응답 크기/deadline을 명시해 구성하는 단일 비스트리밍 제안 adapter입니다. 공식 [Responses function calling](https://developers.openai.com/api/docs/guides/function-calling)을 따르며 도구의 실제 실행은 broker가 담당합니다. 이번 검증은 합성 키와 localhost stub뿐입니다. 다른 vendor·모든 모델·구독 인증 호환과 실제 live 연결을 주장하지 않습니다. MCP tools schema와 AgentSkills metadata는 같은 런북 정본에서 파생하며 실제 MCP transport/client 연결은 아직 없습니다.
 
 ## 근거 스냅샷
 
@@ -47,6 +69,7 @@ pnpm tokens:check
 pnpm test:sds
 pnpm test:uptime
 pnpm test:receipt
+pnpm test:core
 pnpm build
 pnpm exec playwright install chromium
 pnpm test
@@ -57,7 +80,7 @@ pnpm test
 ## 구조와 다음 경계
 
 - [DESIGN.md](DESIGN.md): 정보 계층·OpenCode 기반 SDS 토큰·반응형·접근성·콘텐츠 원칙.
-- [docs/agent-core.md](docs/agent-core.md): 범용 엔진 목표·provider/권한·예산·재조사·알림·지속 상태·첫 구현 인수. 설계 초안이며 미구현입니다.
+- [docs/agent-core.md](docs/agent-core.md): 범용 엔진 목표·현재 로컬 slice·provider/권한·예산·wiki·런북·검증 범위.
 - [docs/PRD.md](docs/PRD.md): 제품 흐름·공급자 경계·불확실성·승인과 실행의 분리·인수 기준.
 - `src/demo.ts`: 새로 작성한 합성 사건과 관측 이력.
 - `src/App.tsx`: 판단함·상태·상세·연결 안내.
@@ -65,7 +88,7 @@ pnpm test
 
 웹과 TUI는 공통 상태·우선순위·명칭과 light/dark 테마 데이터를 공유하도록 설계했습니다. 실제 TUI 실행기·키 바인딩·cell 레이아웃은 아직 구현하지 않았습니다.
 
-실제 수집 어댑터, 추론·에이전트 실행, 조직 인증, 영속 저장, 알림, 승인 감사와 복구 실행은 **아직 구현하지 않았습니다**. 장기사건 재조사·중복 알림 억제의 서버 정책도 화면 설명과 별개의 후속 범위입니다. 구독 로그인은 공급자가 공식 지원하는 경로와 조건을 검증한 뒤 별도로 설계해야 합니다.
+외부 관측 시스템·agent CLI·조직 인증·운영 runbook·외부 알림 채널은 후속 범위입니다. 저장소는 단일 owner의 로컬 journal이며 분산 저장·전원 손실을 포함한 exactly-once를 보장하지 않습니다. args JSON Schema는 object+string const subset만 지원하고 다른 형태는 거부합니다. 다중 provider의 상충 관측 조정, 의미 검색, 자동 runbook 승격과 다단계 모델 대화는 아직 없습니다. 구독 인증은 공급자의 공식 경로를 확인한 runtime별 연동이 필요합니다.
 
 ## 디자인 시스템과 라이선스
 

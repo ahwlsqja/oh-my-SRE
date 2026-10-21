@@ -3,7 +3,7 @@
 ## 정본
 
 - 상태: 활성. 최종 갱신: 2026-10-21.
-- 주요 화면: 판단함, 관측 상태, 사건 상세, 연결 안내.
+- 주요 화면: 예시 판단함·관측 상태·사건 상세·연결 안내, receipt 및 로컬 엔진의 읽기 전용 기록.
 - 기준: 공식 OpenCode UI a2cb1c4의 토큰·타입·간격·컴포넌트 CSS. 기존 Radix Themes 스킨을 대체한다.
 - 세부 정본: [전용 SDS](docs/sds/README.md), [출처](docs/sds/UPSTREAM.md), [원본 manifest](docs/sds/upstream-manifest.json).
 
@@ -17,7 +17,8 @@
 
 - 구체적인 사람 결정과 일반 조사·관측 상태를 구분한다.
 - 근거, 미확인 범위, 다음 행동을 짧게 전달한다.
-- 현재는 합성 프론트엔드다. 실제 수집·모델·조직 인증·알림·복구 실행은 범위 밖이다.
+- 현재는 합성 화면·receipt reader와 자체 로컬 worker용 첫 코어 slice다. 로컬 정적 script·독립 probe·journal·Git wiki를 검증하며 실제 모델·운영 복구·외부 알림은 연결하지 않았다.
+- 로컬 엔진에서는 열린 P0만 판단함, P1/P2·종료 사건은 상태에 둔다. 실행 기록·합성 조사기/Responses adapter·생성 시각 안내는 상단 한 줄로 모으고 budget/outbox/effects는 접힌 실행 기록에 둔다.
 
 ## 사용자와 할 일
 
@@ -93,4 +94,4 @@
 ## 미결정
 
 - [ ] 실제 TUI 렌더러·키 바인딩·ANSI fallback 인수 / TUI 구현 전.
-- [ ] 실제 운영 연결·조직 인증·영속 저장 / 백엔드 구현 전.
+- [ ] 실제 운영 연결·조직 인증·분산 저장 / 해당 연동 구현 전. 단일 owner 로컬 journal은 첫 slice에 구현.
