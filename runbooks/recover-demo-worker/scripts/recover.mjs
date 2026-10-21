@@ -3,7 +3,7 @@ import { join } from "node:path";
 const args = JSON.parse(process.argv[2] ?? "null");
 if (!args || Object.keys(args).length !== 1 || args.workerId !== "demo-worker")
   throw new Error("invalid_args");
-const workspace = process.env.OMS_DEMO_WORKSPACE,
+const workspace = process.env.OMS_ACTION_WORKSPACE,
   operation = process.env.OMS_OPERATION_ID;
 if (!workspace || !/^[a-f0-9]{64}$/.test(operation ?? ""))
   throw new Error("missing_operator_context");

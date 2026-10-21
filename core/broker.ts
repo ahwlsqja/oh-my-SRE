@@ -127,11 +127,13 @@ export class Broker {
     });
     if (!reserved) return store.state.effects[id];
     this.options.fault?.("after_intent");
+    const remainingMs = incident.activeRunDeadlineAt! - now();
+    ensure(remainingMs > 0, "action_deadline");
     try {
       await run(process.execPath, [book.script, JSON.stringify(args.parameters)], {
         cwd: workspace,
-        env: { OMS_DEMO_WORKSPACE: workspace, OMS_OPERATION_ID: id },
-        timeout: Math.min(book.timeoutMs, Math.max(1, incident.activeRunDeadlineAt! - now())),
+        env: { OMS_ACTION_WORKSPACE: workspace, OMS_OPERATION_ID: id },
+        timeout: Math.min(book.timeoutMs, remainingMs),
         maxBuffer: 16384,
       });
     } catch {

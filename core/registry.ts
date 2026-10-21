@@ -1,4 +1,4 @@
-import { readFileSync, realpathSync } from "node:fs";
+import { readFileSync, realpathSync, readdirSync, lstatSync } from "node:fs";
 import { join, relative, isAbsolute } from "node:path";
 import { createHash } from "node:crypto";
 import { ensure, identifier, keys } from "./policy.ts";
@@ -15,11 +15,40 @@ export interface Runbook {
 }
 export function bundleDigest(directory: string): string {
   const hash = createHash("sha256");
-  for (const path of ["manifest.json", "args.schema.json", "scripts/recover.mjs"]) {
+  const paths: string[] = [];
+  let bytes = 0;
+  const walk = (relativePath: string) => {
+    for (const name of readdirSync(join(directory, relativePath)).sort()) {
+      const path = join(relativePath, name),
+        info = lstatSync(join(directory, path));
+      ensure(!info.isSymbolicLink(), "invalid_bundle");
+      if (info.isDirectory()) walk(path);
+      else {
+        ensure(info.isFile(), "invalid_bundle");
+        paths.push(path);
+        bytes += info.size;
+        ensure(paths.length <= 64 && bytes <= 1048576, "bundle_limit");
+      }
+    }
+  };
+  walk("");
+  for (const path of paths.sort()) {
     hash.update(path + "\0");
     hash.update(readFileSync(join(directory, path)));
   }
   return hash.digest("hex");
+}
+function bundlePath(directory: string, value: unknown): string {
+  ensure(
+    typeof value === "string" &&
+      !isAbsolute(value) &&
+      value.split(/[\\/]/).every((part) => part !== ".." && part !== "." && part !== ""),
+    "invalid_runbook_path",
+  );
+  const path = realpathSync(join(directory, value)),
+    location = relative(directory, path);
+  ensure(location && !location.startsWith("..") && !isAbsolute(location), "invalid_runbook_path");
+  return path;
 }
 export function loadRegistry(root: string) {
   const registry = keys(
@@ -56,8 +85,10 @@ export function loadRegistry(root: string) {
       manifest.schemaVersion === 1 &&
         manifest.id === entry.id &&
         manifest.version === entry.version &&
-        manifest.entrypoint === "scripts/recover.mjs" &&
-        manifest.argsSchema === "args.schema.json" &&
+        typeof manifest.entrypoint === "string" &&
+        manifest.entrypoint.endsWith(".mjs") &&
+        typeof manifest.argsSchema === "string" &&
+        manifest.argsSchema.endsWith(".json") &&
         identifier(manifest.effect) &&
         identifier(manifest.target) &&
         identifier(manifest.verification) &&
@@ -68,7 +99,7 @@ export function loadRegistry(root: string) {
     const digest = bundleDigest(directory);
     ensure(digest === entry.digest, "runbook_digest_mismatch");
     const schema = keys(
-      JSON.parse(readFileSync(join(directory, "args.schema.json"), "utf8")),
+      JSON.parse(readFileSync(bundlePath(directory, manifest.argsSchema), "utf8")),
       ["$schema", "type", "required", "additionalProperties", "properties"],
       "invalid_args_schema",
     );
@@ -95,7 +126,7 @@ export function loadRegistry(root: string) {
         ),
       "invalid_args_schema",
     );
-    const script = realpathSync(join(directory, manifest.entrypoint as string)),
+    const script = bundlePath(directory, manifest.entrypoint),
       location = relative(directory, script);
     ensure(!location.startsWith("..") && !isAbsolute(location), "invalid_runbook");
     ensure(!books.has(entry.id), "invalid_registry");
