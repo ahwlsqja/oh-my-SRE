@@ -205,6 +205,16 @@ export default function ReceiptApp() {
                         <Time value={receipt.observedAt} />
                       </dd>
                     </div>
+                    {receipt.window && (
+                      <div>
+                        <dt>집계 창</dt>
+                        <dd>
+                          <Time value={receipt.window.start} /> →{" "}
+                          <Time value={receipt.window.end} />{" "}
+                          <span className="muted">시작 포함 · 끝 제외</span>
+                        </dd>
+                      </div>
+                    )}
                     <div>
                       <dt>근거 만료</dt>
                       <dd>

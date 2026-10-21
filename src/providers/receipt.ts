@@ -58,6 +58,7 @@ export type Receipt = {
   coverage: "scoped" | "incomplete";
   limitations: (typeof limitations)[number][];
   counters: Partial<Record<(typeof counterKeys)[number], number>>;
+  window?: { start: string; end: string };
 };
 export type Snapshot = { version: 1; capturedAt: string; receipts: Receipt[] };
 export type SnapshotView = Omit<Snapshot, "receipts"> & {
@@ -123,6 +124,7 @@ export function validateSnapshot(input: unknown, now = Date.now()): Snapshot {
       "coverage",
       "limitations",
       "counters",
+      "window",
     ]);
     requireValid(
       sourceKinds.includes(row.sourceKind as Receipt["sourceKind"]) &&
@@ -147,6 +149,13 @@ export function validateSnapshot(input: unknown, now = Date.now()): Snapshot {
     );
     requireValid(["verified", "partial", "unknown", "failed"].includes(row.verdict as string));
     requireValid(timestamp(row.observedAt) <= captured);
+    if (row.window !== undefined) {
+      const window = object(row.window, ["start", "end"]);
+      requireValid(
+        timestamp(window.start) < timestamp(window.end) &&
+          timestamp(window.end) <= timestamp(row.observedAt),
+      );
+    }
     requireValid(
       Number.isInteger(row.ttlSeconds) &&
         (row.ttlSeconds as number) >= 1 &&

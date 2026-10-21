@@ -113,6 +113,20 @@ test("Raw 적재원장 연결은 원천 전달 증명과 별도 claim으로 보�
   assert.equal(projectSnapshot(input, now).receipts[0].claim, "raw_load_boundary_membership");
 });
 
+test("창 범위는 원천 관측 이전의 닫힌 구간으로 검증한다", () => {
+  const input = fixture();
+  input.receipts[0].window = { start: "2026-01-01T11:00:00.000Z", end: "2026-01-01T11:30:00.000Z" };
+  assert.deepEqual(projectSnapshot(input, now).receipts[0].window, input.receipts[0].window);
+  for (const window of [
+    { start: "2026-01-01T11:30:00.000Z", end: "2026-01-01T11:00:00.000Z" },
+    { start: "2026-01-01T11:00:00.000Z", end: "2026-01-01T12:00:00.000Z" },
+    { start: "2026-01-01T11:00:00.000Z", end: "2026-01-01T11:30:00.000Z", customer: "synthetic" },
+  ]) {
+    input.receipts[0].window = window;
+    assert.throws(() => projectSnapshot(input, now), /invalid_receipt/);
+  }
+});
+
 test("저장소 밖 고정 일반 파일만 상한 내에서 읽고 원문 오류를 숨긴다", async () => {
   const root = await mkdtemp(join(tmpdir(), "oms-synthetic-"));
   const file = join(root, "receipt.json");
