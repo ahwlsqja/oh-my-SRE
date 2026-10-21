@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "id": "recover-demo-worker",
+  "version": "1.0.0",
+  "entrypoint": "scripts/recover.mjs",
+  "argsSchema": "args.schema.json",
+  "effect": "demo.worker.recover",
+  "target": "demo-worker",
+  "timeoutMs": 1000,
+  "verification": "demo-worker-http"
+}

@@ -11,7 +11,16 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
+    "allowImportingTsExtensions": true,
     "types": ["vite/client", "node"]
   },
-  "include": ["src", "tests", "vite.config.ts", "playwright.config.ts"]
+  "include": [
+    "src",
+    "core",
+    "providers",
+    "storage",
+    "tests",
+    "vite.config.ts",
+    "playwright.config.ts"
+  ]
 }
