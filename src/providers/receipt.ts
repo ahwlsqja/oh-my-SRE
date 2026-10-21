@@ -122,6 +122,18 @@ export function validateSnapshot(input: unknown, now = Date.now()): Snapshot {
       sourceKinds.includes(row.sourceKind as Receipt["sourceKind"]) &&
         claims.includes(row.claim as Receipt["claim"]),
     );
+    const allowedClaims: Record<Receipt["sourceKind"], readonly Receipt["claim"][]> = {
+      deployment_readback: ["deployment_binding"],
+      collector_readback: ["collector_acceptance"],
+      clickhouse_scoped_aggregate: ["raw_overview_cohort", "flink_fact_cohort"],
+      product_overview_http: ["product_overview_response"],
+      sre_operations_overview_http: ["sre_operations_projection"],
+    };
+    requireValid(
+      allowedClaims[row.sourceKind as Receipt["sourceKind"]].includes(
+        row.claim as Receipt["claim"],
+      ),
+    );
     requireValid(["verified", "partial", "unknown", "failed"].includes(row.verdict as string));
     requireValid(timestamp(row.observedAt) <= captured);
     requireValid(

@@ -72,6 +72,9 @@ test("비공개 원문이 섞인 알 수 없는 필드와 잘못된 스키마를
       x.receipts[0].sourceKind = "other";
     },
     (x) => {
+      x.receipts[0].claim = "product_overview_response";
+    },
+    (x) => {
       x.receipts[0].limitations = ["arbitrary text"];
     },
     (x) => {
