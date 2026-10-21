@@ -134,17 +134,42 @@ test("늦은 모델 결과는 새 revision의 효과를 실행하지 않는다",
 test("P1 복구·독립 probe·wiki가 이어지고 다음 사건은 경험을 재검색한다", async () => {
   const h = await harness();
   try {
+    h.wiki.record({
+      incidentId: "prior-failure",
+      episode: 1,
+      revision: 1,
+      failureClass: "worker-error",
+      severity: "P1",
+      outcome: "failed",
+      runbook: { id: h.book.id, version: h.book.version, digest: h.book.digest },
+      evidenceRefs: ["synthetic-failure-proof"],
+    });
     await h.engine.ingest(h.observation());
     const incident = Object.values(h.store.state.incidents)[0];
     assert.equal(incident.recovery, "verified");
     assert.equal(incident.status, "resolved");
     assert.equal(Object.keys(h.store.state.outbox).length, 0);
-    assert.equal(h.wiki.search("worker-error").length, 1);
+    assert.equal(h.wiki.search("worker-error").length, 2);
+    const firstContext = h.investigator.contexts[0];
+    assert.equal(firstContext.failureClass, "worker-error");
+    assert.equal(firstContext.severity, "P1");
+    assert.equal(firstContext.observation.providerId, "demo-probe");
+    assert.ok(firstContext.tools.length > 0);
+    assert.equal(firstContext.knowledge[0].outcome, "failed");
+    h.investigator.call = undefined;
     h.worker.degrade();
     h.clock.value += 100;
     await h.engine.ingest(h.observation({ eventId: "event-2", sourceRevision: "revision-2" }));
     assert.equal(h.investigator.calls, 2);
-    assert.equal(h.investigator.contexts[1].knowledge.length, 1);
+    assert.equal(h.investigator.contexts[1].knowledge.length, 2);
+    assert.ok(
+      h.investigator.contexts[1].knowledge.some(
+        (item) =>
+          item.outcome === "verified" &&
+          item.runbookRef.id === h.book.id &&
+          item.evidenceRefs.length > 0,
+      ),
+    );
     assert.equal(Object.values(h.store.state.incidents)[0].episode, 2);
     assert.equal((await h.probe("demo-worker")).health, "healthy");
   } finally {

@@ -153,6 +153,7 @@ export class Broker {
       (e) => (!id || e.id === id) && e.state !== "verified",
     )) {
       let verified = false;
+      let proofDigest: string | undefined;
       try {
         const p = await probe(effect.resourceKey);
         verified =
@@ -161,12 +162,16 @@ export class Broker {
           p.lastOperation === effect.id &&
           p.observedAt >= effect.startedAt &&
           p.observedAt <= now();
+        if (verified) proofDigest = digest(p);
       } catch {
         /* 관측 실패는 결과 불명 상태로 보존한다. */
       }
       store.transaction((s) => {
         s.effects[effect.id].state = verified ? "verified" : "outcome_unknown";
-        if (verified) s.effects[effect.id].verifiedAt = now();
+        if (verified) {
+          s.effects[effect.id].verifiedAt = now();
+          s.effects[effect.id].proofDigest = proofDigest;
+        }
         s.audit.push({
           at: now(),
           kind: verified ? "recovery_verified" : "effect_unknown",

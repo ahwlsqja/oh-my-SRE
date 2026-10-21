@@ -11,6 +11,8 @@ import type {
 } from "./contracts.ts";
 import type { Broker } from "./broker.ts";
 import type { GitWiki } from "../providers/wiki.ts";
+import { deriveExports } from "./tool-exports.ts";
+import type { RunContext } from "./contracts.ts";
 export interface EngineOptions {
   store: Journal<EngineState>;
   policy: Policy;
@@ -115,6 +117,7 @@ export class Engine {
           periodAttempts: incident?.periodAttempts ?? 0,
           dueAt: this.now(),
           evidenceExpiresAt: observation.expiresAt,
+          observation: structuredClone(observation),
           recovery: "unverified",
           knowledgeHits: 0,
         };
@@ -133,6 +136,7 @@ export class Engine {
         incident.evidenceState = evidence;
         incident.severity = severity;
         incident.evidenceExpiresAt = observation.expiresAt;
+        incident.observation = structuredClone(observation);
       }
       if (incident.severity === "P0" && incident.status === "open") {
         const key = digest([id, incident.episode, "page"]);
@@ -155,19 +159,18 @@ export class Engine {
     const { store, wiki, investigator, broker } = this.options,
       now = this.now(),
       period = String(Math.floor(now / this.policy.periodMs) * this.policy.periodMs);
-    let context:
-      | {
-          runId: string;
-          incidentId: string;
-          revision: number;
-          resourceKey: string;
-          knowledge: string[];
-          deadlineAt: number;
-        }
-      | undefined;
+    let context: RunContext | undefined;
     const current = store.state.incidents[id];
     if (!current || current.status !== "open" || current.activeRunId || current.dueAt > now) return;
-    const knowledge = wiki.search(current.failureClass).map((value) => digest(value));
+    const knowledge = wiki
+      .search(current.failureClass)
+      .map((value) => ({
+        incidentId: value.incidentId,
+        failureClass: value.failureClass,
+        outcome: value.outcome,
+        runbookRef: value.runbook,
+        evidenceRefs: value.evidenceRefs ?? [digest(value)],
+      }));
     store.transaction((s) => {
       const incident = s.incidents[id];
       if (incident.activeRunId || incident.status !== "open" || incident.dueAt > now) return;
@@ -215,6 +218,10 @@ export class Engine {
         incidentId: id,
         revision: incident.revision,
         resourceKey: incident.resourceKey,
+        failureClass: incident.failureClass,
+        severity: incident.severity,
+        observation: structuredClone(incident.observation),
+        tools: deriveExports(broker.options.registry, this.policy).tools,
         knowledge,
         deadlineAt: now + this.policy.runDeadlineMs,
       };
@@ -335,6 +342,17 @@ export class Engine {
           severity: incident.severity,
           outcome: incident.recovery,
           runbook: incident.runbookRef,
+          evidenceRefs: [
+            digest(incident.observation),
+            ...Object.values(this.options.store.state.effects)
+              .filter(
+                (effect) =>
+                  effect.incidentId === incident.id &&
+                  effect.revision === incident.revision &&
+                  effect.proofDigest,
+              )
+              .map((effect) => effect.proofDigest!),
+          ],
         });
     }
   }

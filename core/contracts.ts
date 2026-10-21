@@ -26,7 +26,17 @@ export interface RunContext {
   incidentId: string;
   revision: number;
   resourceKey: string;
-  knowledge: string[];
+  failureClass: string;
+  severity: Severity;
+  observation: Observation;
+  knowledge: {
+    incidentId: string;
+    failureClass: string;
+    outcome: string;
+    runbookRef?: { id: string; version: string; digest: string };
+    evidenceRefs: string[];
+  }[];
+  tools: { name: string; description: string; inputSchema: Record<string, unknown> }[];
   deadlineAt: number;
 }
 export interface Investigator {
@@ -56,6 +66,7 @@ export interface Incident {
   periodAttempts: number;
   dueAt: number;
   evidenceExpiresAt: number;
+  observation: Observation;
   activeRunId?: string;
   activeRunDeadlineAt?: number;
   lastRunRevision?: number;
@@ -72,6 +83,7 @@ export interface Effect {
   runbookRef: { id: string; version: string; digest: string };
   startedAt: number;
   verifiedAt?: number;
+  proofDigest?: string;
 }
 export interface Page {
   key: string;
