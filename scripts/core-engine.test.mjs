@@ -2,6 +2,35 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { harness } from "./core-harness.mjs";
 import { digest } from "../storage/journal.ts";
+test("실제 거부된 조사의 실패 코드와 런북이 영구 지식으로 다음 입력에 도달한다", async () => {
+  const h = await harness();
+  try {
+    h.investigator.call.arguments.parameters.workerId = "not-allowed";
+    await h.engine.ingest(h.observation());
+    const failed = h.wiki.search("worker-error");
+    assert.ok(
+      failed.some(
+        (row) =>
+          row.outcome === "blocked" &&
+          row.failureCode === "invalid_args" &&
+          row.runbook.id === h.book.id,
+      ),
+    );
+    h.investigator.call.arguments.parameters.workerId = "demo-worker";
+    h.clock.value += 100;
+    await h.engine.ingest(
+      h.observation({ eventId: "fixed-attempt", semanticDigest: digest("new-proof") }),
+    );
+    assert.ok(
+      h.investigator.contexts[1].knowledge.some(
+        (row) => row.failureCode === "invalid_args" && row.evidenceRefs.length > 0,
+      ),
+    );
+    assert.equal(Object.values(h.store.state.incidents)[0].recovery, "verified");
+  } finally {
+    await h.close();
+  }
+});
 test("같은 원천의 과거 관측은 최신 P0·revision·dueAt를 되감지 않는다", async () => {
   const h = await harness({ action: false });
   try {

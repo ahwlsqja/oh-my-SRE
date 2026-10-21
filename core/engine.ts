@@ -185,6 +185,7 @@ export class Engine {
       outcome: value.outcome,
       runbookRef: value.runbook,
       evidenceRefs: value.evidenceRefs ?? [digest(value)],
+      failureCode: value.failureCode,
     }));
     store.transaction((s) => {
       const incident = s.incidents[id];
@@ -226,6 +227,7 @@ export class Engine {
       incident.activeRunId = randomUUID();
       incident.activeRunDeadlineAt = now + this.policy.runDeadlineMs;
       incident.investigation = "running";
+      delete incident.failureCode;
       incident.knowledgeHits = knowledge.length;
       incident.dueAt = now + this.policy.persistenceMs;
       context = {
@@ -291,6 +293,19 @@ export class Engine {
       }
       if (result.outcome !== "completed") throw new Error("investigation_failed");
       for (const call of result.toolCalls) {
+        try {
+          const book = broker.options.registry.get(call.arguments.id);
+          if (book.version === call.arguments.version && book.digest === call.arguments.digest)
+            store.transaction((s) => {
+              s.incidents[id].runbookRef = {
+                id: book.id,
+                version: book.version,
+                digest: book.digest,
+              };
+            });
+        } catch {
+          /* 미등록 제안은 실행 gate에서 거부한다. */
+        }
         const effect = await callDerivedTool(
           broker,
           {
@@ -317,6 +332,10 @@ export class Engine {
       store.transaction((s) => {
         if (s.incidents[id].activeRunId === runContext.runId) {
           s.incidents[id].investigation = controller.signal.aborted ? "timed_out" : "blocked";
+          s.incidents[id].failureCode =
+            error instanceof Error && /^[a-z_]+$/.test(error.message)
+              ? error.message
+              : "provider_failed";
           s.audit.push({
             at: this.now(),
             kind: "investigation_stopped",
@@ -333,6 +352,7 @@ export class Engine {
       store.transaction((s) => {
         if (s.incidents[id].activeRunId === runContext.runId) delete s.incidents[id].activeRunId;
       });
+      this.syncKnowledge();
     }
   }
   finishVerified() {
@@ -353,14 +373,20 @@ export class Engine {
   }
   syncKnowledge() {
     for (const incident of Object.values(this.options.store.state.incidents)) {
-      if (incident.status === "resolved")
+      if (
+        incident.status === "resolved" ||
+        ["blocked", "timed_out", "effect_unknown", "interrupted_usage_unknown"].includes(
+          incident.investigation,
+        )
+      )
         this.options.wiki.record({
           incidentId: incident.id,
           episode: incident.episode,
           revision: incident.revision,
           failureClass: incident.failureClass,
           severity: incident.severity,
-          outcome: incident.recovery,
+          outcome: incident.status === "resolved" ? incident.recovery : incident.investigation,
+          failureCode: incident.failureCode,
           runbook: incident.runbookRef,
           evidenceRefs: [
             digest(incident.observation),

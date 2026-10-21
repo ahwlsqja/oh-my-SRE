@@ -22,6 +22,7 @@ export interface Knowledge {
   outcome: string;
   runbook?: { id: string; version: string; digest: string };
   evidenceRefs?: string[];
+  failureCode?: string;
 }
 export class GitWiki {
   directory: string;

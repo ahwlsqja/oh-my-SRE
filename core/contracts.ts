@@ -35,6 +35,7 @@ export interface RunContext {
     outcome: string;
     runbookRef?: { id: string; version: string; digest: string };
     evidenceRefs: string[];
+    failureCode?: string;
   }[];
   tools: { name: string; description: string; inputSchema: Record<string, unknown> }[];
   deadlineAt: number;
@@ -73,6 +74,7 @@ export interface Incident {
   recovery: "unverified" | "verified";
   runbookRef?: { id: string; version: string; digest: string };
   knowledgeHits: number;
+  failureCode?: string;
 }
 export interface Effect {
   id: string;
