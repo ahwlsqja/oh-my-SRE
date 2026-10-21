@@ -4,21 +4,17 @@ import { Button, Tag } from "./sds/components";
 import { SourceSelect } from "./ReceiptApp";
 
 const investigationLabels: Record<string, string> = {
-  investigating: "조사 중",
-  pending: "조사 중",
-  scheduled: "조사 중",
-  retrying: "조사 중",
-  waiting_for_observation: "관측 대기",
+  queued: "대기",
+  running: "조사 중",
   waiting_observation: "관측 대기",
   budget_paused: "예산 대기",
-  budget_wait: "예산 대기",
-  outcome_unknown: "결과 불명",
-  complete: "조사 완료",
+  attempt_paused: "시도 상한 대기",
   completed: "조사 완료",
-  failed: "조사 실패",
-  needs_review: "권한·조건 확인 필요",
+  stale_result: "새 근거 대기",
+  timed_out: "마감 종료",
   blocked: "권한·조건 확인 필요",
-  ineligible: "권한·조건 확인 필요",
+  effect_unknown: "결과 불명",
+  interrupted_usage_unknown: "이전 조사 결과 불명",
 };
 const evidenceLabels: Record<EngineIncident["evidenceState"], string> = {
   complete: "근거 완비",
@@ -77,8 +73,11 @@ function IncidentRow({ item }: { item: EngineIncident }) {
         <div className="engine-copy">
           <h3>{item.resourceKey}</h3>
           <p>
-            {investigationLabels[item.investigation] ?? "조사 상태 확인 필요"} ·{" "}
-            {evidenceLabels[item.evidenceState]}
+            <span className="mono">{item.failureClass}</span> ·{" "}
+            {Object.hasOwn(investigationLabels, item.investigation)
+              ? investigationLabels[item.investigation]
+              : "조사 상태 확인 필요"}{" "}
+            · {evidenceLabels[item.evidenceState]}
           </p>
         </div>
         <div className="engine-tags">
@@ -204,7 +203,6 @@ export default function EngineApp() {
         <a className="brand" href="#main">
           oh-my-SRE
         </a>
-        <span className="demo-label">LOCAL</span>
         <div className="header-actions">
           <Button
             variant="ghost"
@@ -223,16 +221,11 @@ export default function EngineApp() {
         <header className="page-heading">
           <div>
             <h1>로컬 엔진</h1>
-            <p>자체 로컬 worker</p>
           </div>
           <Button variant="ghost-muted" onClick={() => setRequest(request + 1)}>
             다시 읽기
           </Button>
         </header>
-        <div className="receipt-scope">
-          <Tag>로컬 demo 범위</Tag>
-          <p>근거 완비 ≠ 서비스 정상</p>
-        </div>
         {state === "loading" && (
           <p className="notice" role="status">
             엔진 snapshot 읽는 중
@@ -247,17 +240,12 @@ export default function EngineApp() {
         {snapshot && (
           <>
             <div className="engine-context">
-              <Tag>
-                {snapshot.investigator === "fixture"
-                  ? "합성 investigator"
-                  : "OpenAI Responses investigator"}
-              </Tag>
               <p>
-                스냅샷 생성 <Time value={snapshot.observedAt} /> · 자동 갱신 없음
-              </p>
-              <p>
-                입력 fixture 여부는 이 projection에서 미제공 · 이 화면의 실모델 live 호출 0회 · 운영
-                연결 없음
+                로컬 실행 기록 ·{" "}
+                <span>
+                  {snapshot.investigator === "fixture" ? "합성 조사기" : "Responses 어댑터"}
+                </span>{" "}
+                · 생성 <Time value={snapshot.observedAt} />
               </p>
             </div>
             <Incidents title="판단함" items={snapshot.incidents.filter(isDecision)} />
@@ -265,70 +253,77 @@ export default function EngineApp() {
               title="사건 상태"
               items={snapshot.incidents.filter((item) => !isDecision(item))}
             />
-            <section className="engine-section" aria-label="호출 예산">
-              <h2 className="section-title">호출 예산</h2>
-              <p className="engine-note">조사 호출 횟수 · 기간별 예약 / 사용</p>
-              <div className="engine-list">
-                {Object.entries(snapshot.budgets).map(([period, counts]) => (
-                  <div className="engine-row" key={period}>
-                    <span className="engine-copy">
-                      <Time value={Number(period)} />
-                    </span>
-                    <span className="engine-tags">
-                      예약 {counts.reserved}회 · 사용 {counts.spent}회
-                    </span>
-                  </div>
-                ))}
-                {Object.keys(snapshot.budgets).length === 0 && (
-                  <p className="engine-empty">예산 기록 없음</p>
-                )}
-              </div>
-            </section>
-            <section className="engine-section" aria-label="로컬 outbox">
-              <h2 className="section-title">
-                로컬 outbox <span>{snapshot.pages.length}</span>
-              </h2>
-              <p className="engine-note">로컬 페이지 의도·ACK 기록 · 외부 알림 전송 없음</p>
-              <div className="engine-list">
-                {snapshot.pages.map((page) => (
-                  <div className="engine-row" key={page.key}>
-                    <div className="engine-copy">
-                      <h3>사건 {page.incidentId.slice(0, 8)}</h3>
-                      <p>
-                        episode {page.episode} · revision {page.revision}
-                        {page.recoveryUpdate ? " · 회복 갱신" : ""}
-                      </p>
+            <details className="engine-record">
+              <summary>실행 기록</summary>
+              <p className="engine-note">
+                자체 로컬 worker · 입력 fixture 여부 미제공 · 모델 호출/복구 제어 없음
+              </p>
+              <p className="engine-note">근거 완비는 서비스 정상 판정과 별도.</p>
+              <section className="engine-section" aria-label="호출 예산">
+                <h2 className="section-title">호출 예산</h2>
+                <p className="engine-note">조사 호출 횟수 · 기간별 예약 / 사용</p>
+                <div className="engine-list">
+                  {Object.entries(snapshot.budgets).map(([period, counts]) => (
+                    <div className="engine-row" key={period}>
+                      <span className="engine-copy">
+                        <Time value={Number(period)} />
+                      </span>
+                      <span className="engine-tags">
+                        예약 {counts.reserved}회 · 사용 {counts.spent}회
+                      </span>
                     </div>
-                    <Tag>{page.state === "pending" ? "ACK 대기" : "ACK 기록"}</Tag>
-                  </div>
-                ))}
-                {!snapshot.pages.length && <p className="engine-empty">페이지 의도 없음</p>}
-              </div>
-            </section>
-            <section className="engine-section" aria-label="실행 상태">
-              <h2 className="section-title">
-                실행 상태 <span>{snapshot.effects.length}</span>
-              </h2>
-              <p className="engine-note">표시한 로컬 demo 범위 · 회복과 실행 확인은 별도</p>
-              <div className="engine-list">
-                {snapshot.effects.map((effect) => (
-                  <div className="engine-row" key={effect.id}>
-                    <div className="engine-copy">
-                      <h3>{effect.resourceKey}</h3>
-                      <p>
-                        {effect.runbookRef.id} · {effect.runbookRef.version} · revision{" "}
-                        {effect.revision}
-                      </p>
+                  ))}
+                  {Object.keys(snapshot.budgets).length === 0 && (
+                    <p className="engine-empty">예산 기록 없음</p>
+                  )}
+                </div>
+              </section>
+              <section className="engine-section" aria-label="로컬 outbox">
+                <h2 className="section-title">
+                  로컬 outbox <span>{snapshot.pages.length}</span>
+                </h2>
+                <p className="engine-note">로컬 페이지 의도·ACK 기록 · 외부 알림 전송 없음</p>
+                <div className="engine-list">
+                  {snapshot.pages.map((page) => (
+                    <div className="engine-row" key={page.key}>
+                      <div className="engine-copy">
+                        <h3>사건 {page.incidentId.slice(0, 8)}</h3>
+                        <p>
+                          episode {page.episode} · revision {page.revision}
+                          {page.recoveryUpdate ? " · 회복 갱신" : ""}
+                        </p>
+                      </div>
+                      <Tag>{page.state === "pending" ? "ACK 대기" : "ACK 기록"}</Tag>
                     </div>
-                    <Tag>{effectLabels[effect.state]}</Tag>
-                  </div>
-                ))}
-                {!snapshot.effects.length && <p className="engine-empty">실행 기록 없음</p>}
-              </div>
-            </section>
-            <p className="engine-note engine-audit">
-              감사 기록 {snapshot.auditCount}건 · 원문·자격증명 미제공
-            </p>
+                  ))}
+                  {!snapshot.pages.length && <p className="engine-empty">페이지 의도 없음</p>}
+                </div>
+              </section>
+              <section className="engine-section" aria-label="실행 상태">
+                <h2 className="section-title">
+                  실행 상태 <span>{snapshot.effects.length}</span>
+                </h2>
+                <p className="engine-note">표시한 로컬 demo 범위 · 회복과 실행 확인은 별도</p>
+                <div className="engine-list">
+                  {snapshot.effects.map((effect) => (
+                    <div className="engine-row" key={effect.id}>
+                      <div className="engine-copy">
+                        <h3>{effect.resourceKey}</h3>
+                        <p>
+                          {effect.runbookRef.id} · {effect.runbookRef.version} · revision{" "}
+                          {effect.revision}
+                        </p>
+                      </div>
+                      <Tag>{effectLabels[effect.state]}</Tag>
+                    </div>
+                  ))}
+                  {!snapshot.effects.length && <p className="engine-empty">실행 기록 없음</p>}
+                </div>
+              </section>
+              <p className="engine-note engine-audit">
+                감사 기록 {snapshot.auditCount}건 · 원문·자격증명 미제공
+              </p>
+            </details>
           </>
         )}
       </main>

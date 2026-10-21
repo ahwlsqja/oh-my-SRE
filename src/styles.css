@@ -8,8 +8,18 @@
   line-height: 21px;
   color: var(--sds-muted);
 }
-.engine-context > p:last-child {
-  width: 100%;
+.engine-record {
+  margin-top: 28px;
+  border-block: 1px solid var(--sds-border);
+  padding: 14px 0;
+}
+.engine-record > summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--sds-muted);
+}
+.engine-record[open] > summary {
+  margin-bottom: 16px;
 }
 .engine-section {
   margin-top: 28px;

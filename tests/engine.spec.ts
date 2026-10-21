@@ -26,7 +26,7 @@ const projection = (): EngineProjection => ({
       severity: "P0",
       evidenceState: "complete",
       status: "open",
-      investigation: "investigating",
+      investigation: "running",
       attempts: 2,
       periodAttempts: 1,
       dueAt: 1767268800000,
@@ -58,7 +58,7 @@ const projection = (): EngineProjection => ({
       severity: "P2",
       evidenceState: "complete",
       status: "resolved",
-      investigation: "complete",
+      investigation: "completed",
       attempts: 2,
       periodAttempts: 1,
       dueAt: 1767268800000,
@@ -74,7 +74,7 @@ const projection = (): EngineProjection => ({
       severity: "P0",
       evidenceState: "stale",
       status: "resolved",
-      investigation: "unrecognized_code",
+      investigation: "__proto__",
       attempts: 2,
       periodAttempts: 0,
       dueAt: 1767268800000,
@@ -136,33 +136,48 @@ test("로컬 엔진은 P0 판단함과 사건 상태를 나누고 범위·생성
   await page.getByRole("combobox", { name: "자료 출처" }).selectOption("engine");
   await expect(page).toHaveURL(/mode=engine/);
   await expect(page.getByRole("heading", { name: "로컬 엔진", exact: true })).toBeVisible();
-  await expect(page.getByText("자체 로컬 worker", { exact: true })).toBeVisible();
-  await expect(page.getByText("합성 investigator", { exact: true })).toBeVisible();
+  await expect(page.getByText("합성 조사기", { exact: true })).toBeVisible();
   await expect(
     page.locator(".engine-context time[datetime='2026-01-01T12:00:00.000Z']"),
   ).toBeVisible();
   const inbox = page.getByRole("region", { name: "판단함" });
   const status = page.getByRole("region", { name: "사건 상태" });
   await expect(inbox).toContainText("synthetic-worker-p0");
+  await expect(inbox).toContainText("조사 중");
+  await expect(inbox).toContainText("probe_failed");
   await expect(inbox).not.toContainText("synthetic-worker-p1");
   await expect(inbox).not.toContainText("synthetic-worker-p0-closed");
   await expect(status).toContainText("synthetic-worker-p1");
   await expect(status).toContainText("synthetic-worker-p2");
   await expect(status).toContainText("종료");
-  await expect(page.getByText("근거 완비 ≠ 서비스 정상", { exact: true })).toBeVisible();
-  await expect(page.locator("body")).toContainText("입력 fixture 여부는 이 projection에서 미제공");
-  await expect(page.locator("body")).toContainText("이 화면의 실모델 live 호출 0회");
+  await expect(status).toContainText("조사 상태 확인 필요");
+  await expect(page.locator(".engine-record")).not.toHaveAttribute("open");
+  await expect(page.getByRole("region", { name: "호출 예산" })).not.toBeVisible();
+  await expect(page.locator("body")).not.toContainText("실모델 live");
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
   await page.screenshot({ path: testInfo.outputPath("engine.png"), fullPage: true });
+  await page.locator(".engine-record > summary").click();
+  await expect(
+    page.getByText("근거 완비는 서비스 정상 판정과 별도.", { exact: true }),
+  ).toBeVisible();
+  await expect(page.locator("body")).toContainText("자체 로컬 worker");
+  await expect(page.locator("body")).toContainText("입력 fixture 여부 미제공");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+  await page.screenshot({ path: testInfo.outputPath("engine-record.png"), fullPage: true });
 });
 
 test("호출 예산·로컬 outbox·실행 결과는 읽기 전용 상태로 표시한다", async ({ page }) => {
   const writes: string[] = [];
+  const input = projection();
+  input.investigator = "openai_responses";
   page.on("request", (req) => {
     if (req.method() !== "GET") writes.push(req.method());
   });
-  await page.route("**/api/engine", (route) => route.fulfill({ json: projection() }));
+  await page.route("**/api/engine", (route) => route.fulfill({ json: input }));
   await page.goto("/?mode=engine");
+  await expect(page.getByText("Responses 어댑터", { exact: true })).toBeVisible();
+  await expect(page.locator("body")).not.toContainText("합성 조사기");
+  await page.locator(".engine-record > summary").click();
   await expect(page.getByRole("region", { name: "호출 예산" })).toContainText("예약 1회");
   await expect(page.getByRole("region", { name: "호출 예산" })).toContainText("사용 3회");
   await expect(page.getByRole("region", { name: "로컬 outbox" })).toContainText("ACK 대기");
@@ -172,6 +187,8 @@ test("호출 예산·로컬 outbox·실행 결과는 읽기 전용 상태로 표
   await expect(page.getByRole("button", { name: /ACK|실행|판단 기록/ })).toHaveCount(0);
   await expect(page.locator("body")).not.toContainText(/USD|토큰 사용|\$0/);
   await page.getByRole("button", { name: "다시 읽기" }).click();
+  await expect(page.locator(".engine-record")).toBeVisible();
+  await page.locator(".engine-record > summary").click();
   await expect(page.getByRole("region", { name: "로컬 outbox" })).toBeVisible();
   expect(writes).toEqual([]);
 });
