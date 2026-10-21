@@ -196,6 +196,7 @@ export class Engine {
       budget.reserved++;
       incident.attempts++;
       incident.activeRunId = randomUUID();
+      incident.activeRunDeadlineAt = now + this.policy.runDeadlineMs;
       incident.investigation = "running";
       incident.knowledgeHits = knowledge.length;
       incident.dueAt = now + this.policy.persistenceMs;

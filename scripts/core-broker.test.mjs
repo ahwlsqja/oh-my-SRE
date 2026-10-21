@@ -20,6 +20,7 @@ test("broker가 사전 허용 script를 한 번 적용하고 새 probe로 검증
       resourceKey: "demo-worker",
       revision: 1,
       activeRunId: "run-1",
+      activeRunDeadlineAt: Date.now() + 5000,
     };
   });
   const policy = {
@@ -89,6 +90,29 @@ test("broker가 사전 허용 script를 한 번 적용하고 새 probe로 검증
       broker.execute({ ...request, call: { ...request.call, shell: "synthetic-unregistered" } }),
       /invalid_tool_call/,
     );
+    let clock = Date.now();
+    const deadline = clock + 50;
+    writeFileSync(
+      join(workspace, "worker.json"),
+      JSON.stringify({ health: "degraded", effects: 1 }),
+    );
+    store.transaction((s) => {
+      s.incidents.demo.revision = 2;
+      s.incidents.demo.activeRunDeadlineAt = deadline;
+    });
+    const slow = new Broker({
+      store,
+      registry,
+      policy,
+      workspace,
+      now: () => clock,
+      probe: async () => {
+        clock = deadline + 1;
+        return { resourceKey: "demo-worker", health: "degraded", observedAt: clock };
+      },
+    });
+    await assert.rejects(slow.execute({ ...request, revision: 2 }), /action_deadline/);
+    assert.equal(JSON.parse(readFileSync(join(workspace, "worker.json"), "utf8")).effects, 1);
   } finally {
     store.close();
     rmSync(workspace, { recursive: true, force: true });

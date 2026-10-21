@@ -55,6 +55,7 @@ export interface Incident {
   dueAt: number;
   evidenceExpiresAt: number;
   activeRunId?: string;
+  activeRunDeadlineAt?: number;
   lastRunRevision?: number;
   recovery: "unverified" | "verified";
   runbookRef?: { id: string; version: string; digest: string };

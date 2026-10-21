@@ -50,6 +50,12 @@ export class Broker {
     const incident = store.state.incidents[request.incidentId];
     ensure(
       incident &&
+        typeof incident.activeRunDeadlineAt === "number" &&
+        incident.activeRunDeadlineAt > now(),
+      "action_deadline",
+    );
+    ensure(
+      incident &&
         incident.revision === request.revision &&
         incident.activeRunId === request.runId &&
         incident.resourceKey === book.target,
@@ -86,6 +92,7 @@ export class Broker {
       "stale_action_context",
     );
     registry.get(book.id);
+    ensure(store.state.incidents[incident.id].activeRunDeadlineAt! > now(), "action_deadline");
     const effect: Effect = {
       id,
       incidentId: incident.id,
@@ -124,7 +131,7 @@ export class Broker {
       await run(process.execPath, [book.script, JSON.stringify(args.parameters)], {
         cwd: workspace,
         env: { OMS_DEMO_WORKSPACE: workspace, OMS_OPERATION_ID: id },
-        timeout: book.timeoutMs,
+        timeout: Math.min(book.timeoutMs, Math.max(1, incident.activeRunDeadlineAt! - now())),
         maxBuffer: 16384,
       });
     } catch {
