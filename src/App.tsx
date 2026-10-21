@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   Button,
   Dialog,
-  ObservationTimeline,
+  UptimeTimeline,
   Select,
   Tabs,
   Tag,
@@ -213,37 +213,42 @@ function StatusPage() {
           <h1>관측 상태</h1>
           <p>서비스별 관측과 미확인 범위</p>
         </div>
-        <span className="mono muted">최근 10:12</span>
+        <span className="mono muted">기준 2026.10.21</span>
       </header>
       <div className="service-list">
         {serviceObservations.map((service) => (
-          <section className="service-row" key={service.name} aria-label={service.name}>
-            <div className="service-top">
-              <div>
-                <h2>{service.name}</h2>
-                <span className="muted">{service.scope}</span>
-              </div>
-              <div className="service-state">
+          <UptimeTimeline
+            key={service.name}
+            name={service.name}
+            kind="synthetic"
+            days={service.days}
+            currentStatus={
+              <>
                 <Tag status={service.state} />
                 <span className="mono">{service.last}</span>
-              </div>
-            </div>
-            <ObservationTimeline name={service.name} history={service.history} />
-            <div className="service-action">
-              <span>{service.action}</span>
-              <span className="muted">{service.unknown}</span>
-            </div>
-          </section>
+              </>
+            }
+            detail={
+              <>
+                <span>{service.action}</span>
+                <span>{service.unknown}</span>
+              </>
+            }
+          />
         ))}
       </div>
       <div className="history-legend">
         <span>
           <i className="s" />
-          신호 안정
+          관측 확인
         </span>
         <span>
           <i className="p" />
           일부 미확인
+        </span>
+        <span>
+          <i className="e" />
+          오류 신호
         </span>
         <span>
           <i className="u" />

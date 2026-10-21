@@ -80,15 +80,53 @@ test("상태 화면에서 관측과 미확인 범위를 나눠 읽는다", async
       .getByText("신호 안정", { exact: true }),
   ).toBeVisible();
   await expect(page.getByText("관측 대기", { exact: true })).toBeVisible();
-  await expect(page.getByText("회복 여부 별도 검증 필요")).toBeVisible();
-  await expect(page.getByRole("img", { name: /전달 서비스, 예시 관측/ })).toBeVisible();
+  await expect(page.locator(".app-header")).toHaveCount(1);
+  const search = page.getByRole("region", { name: "검색 서비스", exact: true });
+  await search.getByRole("slider").focus();
+  await expect(page.getByRole("tooltip")).toContainText("회복 여부 별도 검증 필요");
+  await page.getByRole("heading", { name: "관측 상태", exact: true }).click();
+  await expect(page.getByRole("group", { name: /전달 서비스, 90일 예시 관측/ })).toBeVisible();
+  await expect(page.locator(".uptime-metric").filter({ hasText: "가동률 미확인" })).toHaveCount(3);
   const segmentColor = await page
-    .locator(".observation-segment.s")
+    .locator(".uptime-bar.observed > span")
     .first()
     .evaluate((element) => getComputedStyle(element).backgroundColor);
   expect(segmentColor).not.toBe("rgba(0, 0, 0, 0)");
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
   await page.screenshot({ path: testInfo.outputPath("status.png"), fullPage: true });
+});
+
+test("90일 이력의 hover와 키보드로 날짜·미확인·부분기간을 확인한다", async ({ page }, testInfo) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "상태", exact: true }).click();
+  for (const name of ["이벤트 파이프라인", "검색 서비스", "전달 서비스"]) {
+    await expect(
+      page.getByRole("region", { name, exact: true }).locator(".uptime-bar"),
+    ).toHaveCount(90);
+  }
+  const region = page.getByRole("region", { name: "전달 서비스", exact: true });
+  const slider = region.getByRole("slider", { name: "전달 서비스 일별 이력" });
+  const box = await slider.boundingBox();
+  await page.mouse.move(box!.x + box!.width / 180, box!.y + 20);
+  await expect(page.getByRole("tooltip")).toContainText("2026년 7월 24일");
+  await page.mouse.move(0, 0);
+  await slider.focus();
+  await expect(page.getByRole("tooltip")).toContainText("부분 기간 12시간 / 24시간");
+  await expect(page.getByRole("tooltip")).toContainText("관측 부족");
+  await slider.press("ArrowLeft");
+  await expect(page.getByRole("tooltip")).toContainText("2026년 10월 20일");
+  await slider.press("Home");
+  await expect(page.getByRole("tooltip")).toContainText("2026년 7월 24일");
+  await slider.press("End");
+  await expect(slider).toHaveAttribute("aria-valuetext", /2026년 10월 21일/);
+  await page.screenshot({ path: testInfo.outputPath("daily-detail.png"), fullPage: true });
+  const light = await page
+    .locator("body")
+    .evaluate((element) => getComputedStyle(element).backgroundColor);
+  await page.getByRole("button", { name: "어두운 테마" }).click();
+  await expect(page.locator("body")).not.toHaveCSS("background-color", light);
+  await page.mouse.move(0, 0);
+  await page.screenshot({ path: testInfo.outputPath("dark-status.png"), fullPage: true });
 });
 
 test("연결 안내는 공급자와 인증을 구분하고 키를 수집하지 않는다", async ({ page }) => {

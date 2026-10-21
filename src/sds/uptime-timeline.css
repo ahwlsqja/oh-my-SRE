@@ -1,0 +1,145 @@
+.uptime-row {
+  padding: 16px 20px;
+}
+.uptime-row + .uptime-row {
+  border-top: 1px solid var(--sds-border);
+}
+.uptime-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+.uptime-header h2 {
+  font-size: 14px;
+  font-weight: 670;
+  line-height: 22px;
+}
+.uptime-current {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.uptime-chart {
+  position: relative;
+  height: 44px;
+  padding: 5px 0;
+}
+.uptime-chart:focus-within {
+  outline: 2px solid var(--sds-focus);
+  outline-offset: 3px;
+}
+.uptime-bars {
+  display: flex;
+  height: 34px;
+  gap: 3px;
+}
+.uptime-bar {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  background: repeating-linear-gradient(135deg, var(--sds-border) 0 2px, transparent 2px 4px);
+}
+.uptime-bar > span {
+  position: absolute;
+  inset: auto 0 0;
+  height: var(--window);
+}
+.uptime-bar.observed > span {
+  background: var(--sds-success);
+}
+.uptime-bar.partial > span {
+  background: var(--sds-warning);
+}
+.uptime-bar.error > span {
+  background: var(--sds-danger);
+}
+.uptime-bar.unknown > span {
+  background: transparent;
+}
+.uptime-bar[data-active] {
+  outline: 1px solid var(--sds-text);
+  outline-offset: 1px;
+  z-index: 1;
+}
+.uptime-slider {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 44px;
+  margin: 0;
+  opacity: 0;
+  cursor: crosshair;
+}
+.uptime-tooltip {
+  position: absolute;
+  z-index: 10;
+  top: 48px;
+  transform: translateX(-50%);
+  width: 208px;
+  padding: 10px 12px;
+  border: 1px solid var(--sds-border);
+  border-radius: 4px;
+  background: var(--sds-panel);
+  color: var(--sds-text);
+  box-shadow: var(--v2-elevation-floating);
+  pointer-events: none;
+}
+.uptime-tooltip strong,
+.uptime-tooltip span {
+  display: block;
+  font-size: 12px;
+  line-height: 20px;
+}
+.uptime-tooltip strong {
+  font-weight: 530;
+}
+.uptime-tooltip span {
+  color: var(--sds-muted);
+}
+.uptime-footer {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  font-size: 11px;
+  line-height: 20px;
+  color: var(--sds-muted);
+}
+.uptime-footer > span {
+  white-space: nowrap;
+}
+.uptime-footer > i {
+  flex: 1;
+  height: 1px;
+  background: var(--sds-border);
+}
+.uptime-metric {
+  font-variant-numeric: tabular-nums;
+}
+.uptime-detail {
+  display: grid;
+  gap: 2px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--sds-border);
+}
+@media (max-width: 760px) {
+  .uptime-row {
+    padding: 16px 12px;
+  }
+  .uptime-bars {
+    gap: 2px;
+  }
+  .uptime-footer {
+    gap: 8px;
+    font-size: 10px;
+  }
+  .uptime-header {
+    gap: 8px;
+  }
+  .uptime-header h2 {
+    font-size: 13px;
+  }
+}

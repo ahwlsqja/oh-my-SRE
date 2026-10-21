@@ -48,7 +48,7 @@
 
 ## 컴포넌트
 
-- Button, Tag, Dialog, Select, Tabs, ObservationTimeline을 `src/sds/components.tsx`에서 사용한다.
+- Button, Tag, Dialog, Select, Tabs, UptimeTimeline을 `src/sds/components.tsx`에서 사용한다.
 - 원본 CSS는 `src/sds/upstream/`, React·모바일 차이는 `components.css`에 둔다.
 - 제품 상태·우선순위·명칭 정본은 `tokens.json`. 생성 파일을 직접 편집하지 않는다.
 - 앱 CSS는 배치만 관리하며 별도 페이지 팔레트·상태명을 만들지 않는다.

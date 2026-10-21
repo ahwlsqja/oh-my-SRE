@@ -32,14 +32,14 @@
 
 ## 3. 핵심 컴포넌트
 
-| 컴포넌트            | 재사용과 규칙                                                                                   |
-| ------------------- | ----------------------------------------------------------------------------------------------- |
-| Button              | OpenCode button-v2 원본 CSS. neutral/contrast/outline/ghost, 24·28·32px. 중요한 행동만 contrast |
-| Tag                 | 원본 tag CSS. 상태 의미는 `tokens.json`에서 읽고 색만으로 전달하지 않음                         |
-| Dialog              | 원본 overlay·surface·slot 구조. React focus primitive만 별도 연결. Escape·focus trap·복귀 보존  |
-| Select              | 원본 select-v2 외관의 네이티브 선택. 키보드·모바일 기본 동작 보존                               |
-| Tabs                | 원본 tabs DOM·CSS. 제품 내비게이션은 button group으로 노출. 화면 패널의 선택 의미를 유지        |
-| ObservationTimeline | 공통 상태 토큰으로 관측 이력 표현. unknown hatch와 명칭을 유지. 가동률·회복 판정과 별도         |
+| 컴포넌트       | 재사용과 규칙                                                                                   |
+| -------------- | ----------------------------------------------------------------------------------------------- |
+| Button         | OpenCode button-v2 원본 CSS. neutral/contrast/outline/ghost, 24·28·32px. 중요한 행동만 contrast |
+| Tag            | 원본 tag CSS. 상태 의미는 `tokens.json`에서 읽고 색만으로 전달하지 않음                         |
+| Dialog         | 원본 overlay·surface·slot 구조. React focus primitive만 별도 연결. Escape·focus trap·복귀 보존  |
+| Select         | 원본 select-v2 외관의 네이티브 선택. 키보드·모바일 기본 동작 보존                               |
+| Tabs           | 원본 tabs DOM·CSS. 제품 내비게이션은 button group으로 노출. 화면 패널의 선택 의미를 유지        |
+| UptimeTimeline | 90일 날짜별 상태 이력과 일별 상세. unknown·부분기간 보존. 전체 측정 근거 없으면 가동률 미확인   |
 
 legacy tabs 역할은 adapter에서 공식 v2 background·border·text 역할에 연결한다. 특히 다크에서 라이트 border가 남지 않아야 한다. Dialog의 case 크기와 React 콘텐츠 stretch는 이식 차이이며 원본 파일을 수정하지 않는다.
 
@@ -62,3 +62,5 @@ Inter 원본을 자체 호스팅한다. 한국어는 시스템 글꼴 fallback, 
 기존 12개 E2E의 제품 동작을 보존하고 light/dark 전환을 추가 검증한다. 실제 브라우저에서 데스크톱·모바일 이미지와 원본 OpenCode web/TUI 참고의 밀도·컨트롤·구분선을 대조한다. 스크린샷과 비교 JSON은 로컬 QA 산출물이며 공개 참고 이미지·상표를 배포하지 않는다.
 
 정확한 파일·라이선스·변경 범위는 [UPSTREAM.md](UPSTREAM.md), [manifest](upstream-manifest.json), 원본 MIT 및 Inter OFL 고지를 따른다. 전체 OpenCode 패키지·제품 엔진을 사용하는 것은 아니다.
+
+날짜별 상태 이력의 입력·가동률 분모·키보드 계약은 [UPTIME.md](UPTIME.md)를 따른다.

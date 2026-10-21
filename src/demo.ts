@@ -1,3 +1,4 @@
+import type { HistoryDay, DayState } from "./sds/uptime";
 export type Decision = "pending" | "held" | "reviewed" | null;
 export interface SreCase {
   id: string;
@@ -136,6 +137,14 @@ export const demoCases: SreCase[] = [
   },
 ];
 
+function syntheticDays(state: (index: number) => DayState): HistoryDay[] {
+  return Array.from({ length: 90 }, (_, index) => ({
+    date: new Date(Date.UTC(2026, 6, 24 + index)).toISOString().slice(0, 10),
+    state: state(index),
+    windowMinutes: index === 89 ? 720 : 1440,
+  }));
+}
+
 export const serviceObservations = [
   {
     name: "이벤트 파이프라인",
@@ -144,7 +153,13 @@ export const serviceObservations = [
     last: "10:12",
     action: "변화 재점검",
     unknown: "영향 범위 미확인",
-    history: "ssssssssssssspppppssssssspppppp",
+    days: syntheticDays((index) =>
+      [12, 43].includes(index)
+        ? "error"
+        : index >= 83 || (index >= 55 && index <= 60)
+          ? "partial"
+          : "observed",
+    ),
   },
   {
     name: "검색 서비스",
@@ -153,7 +168,7 @@ export const serviceObservations = [
     last: "10:10",
     action: "기존 근거 대조",
     unknown: "회복 여부 별도 검증 필요",
-    history: "ssssssssppssssssssssssssssssss",
+    days: syntheticDays((index) => ([10, 21].includes(index) ? "partial" : "observed")),
   },
   {
     name: "전달 서비스",
@@ -162,6 +177,6 @@ export const serviceObservations = [
     last: "09:56",
     action: "다음 관측 대기",
     unknown: "현재 상태 미확인",
-    history: "sssssssssssssssssssssuuuuuuuuu",
+    days: syntheticDays((index) => (index >= 81 ? "unknown" : "observed")),
   },
 ];

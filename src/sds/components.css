@@ -114,37 +114,20 @@
   word-break: keep-all;
   text-wrap: balance;
 }
-[data-component="observation-history"] .observation-bar {
-  display: flex;
-  gap: 3px;
-  height: 20px;
-}
-.observation-segment {
-  flex: 1;
-  min-width: 0;
-}
-.observation-segment.s,
 .history-legend .s {
   background: var(--sds-success);
-  opacity: 0.72;
+  opacity: 0.8;
 }
-.observation-segment.p,
 .history-legend .p {
   background: var(--sds-warning);
-  opacity: 0.75;
+  opacity: 0.8;
 }
-.observation-segment.u,
+.history-legend .e {
+  background: var(--sds-danger);
+  opacity: 0.8;
+}
 .history-legend .u {
-  background: repeating-linear-gradient(135deg, var(--sds-border) 0 3px, transparent 3px 6px);
-}
-.observation-range {
-  display: flex;
-  justify-content: space-between;
-  font-size: 11px;
-  line-height: 20px;
-  color: var(--sds-muted);
-  margin-top: 6px;
-  font-variant-numeric: tabular-nums;
+  background: repeating-linear-gradient(135deg, var(--sds-border) 0 2px, transparent 2px 4px);
 }
 @media (hover: none) and (pointer: coarse) {
   [data-component="button-v2"],

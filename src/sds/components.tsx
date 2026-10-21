@@ -147,29 +147,4 @@ export function Tabs<T extends string>({
   );
 }
 
-export function ObservationTimeline({ name, history }: { name: string; history: string }) {
-  const states: Record<string, Status> = { s: "stable", p: "partial", u: "observation_gap" };
-  return (
-    <div data-component="observation-history">
-      <div
-        className="observation-bar"
-        role="img"
-        aria-label={`${name}, 예시 관측 ${history.length}회. 정상이나 회복의 증명이 아닙니다.`}
-      >
-        {Array.from(history).map((state, index) => (
-          <span
-            key={index}
-            aria-hidden="true"
-            className={`observation-segment ${state}`}
-            title={`${index + 1}: ${statusSemantics[states[state]].label}`}
-          />
-        ))}
-      </div>
-      <div className="observation-range">
-        <span>이전</span>
-        <span>{history.length}회 관측</span>
-        <span>최근</span>
-      </div>
-    </div>
-  );
-}
+export { UptimeTimeline } from "./UptimeTimeline";
