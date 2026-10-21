@@ -3,7 +3,7 @@ import { constants } from "node:fs";
 import { isAbsolute, relative, sep } from "node:path";
 import { validateSnapshot } from "../src/providers/receipt.ts";
 
-export async function readReceiptFile(path, root, now = Date.now()) {
+export async function readBoundedJsonFile(path, root) {
   let file;
   try {
     if (!path || !isAbsolute(path)) throw new Error();
@@ -20,11 +20,19 @@ export async function readReceiptFile(path, root, now = Date.now()) {
     const buffer = Buffer.alloc(131073);
     const { bytesRead } = await file.read(buffer, 0, buffer.length, 0);
     if (bytesRead > 131072) throw new Error();
-    return validateSnapshot(JSON.parse(buffer.subarray(0, bytesRead).toString("utf8")), now);
+    return JSON.parse(buffer.subarray(0, bytesRead).toString("utf8"));
   } catch {
-    throw new Error("receipt_unavailable");
+    throw new Error("local_file_unavailable");
   } finally {
     await file?.close();
+  }
+}
+
+export async function readReceiptFile(path, root, now = Date.now()) {
+  try {
+    return validateSnapshot(await readBoundedJsonFile(path, root), now);
+  } catch {
+    throw new Error("receipt_unavailable");
   }
 }
 
