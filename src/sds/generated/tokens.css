@@ -1,0 +1,14 @@
+/* tokens.json에서 생성. 직접 수정하지 않는다. */
+:root {
+  --sds-canvas: var(--v2-background-bg-base);
+  --sds-panel: var(--v2-background-bg-layer-01);
+  --sds-inset: var(--v2-background-bg-layer-02);
+  --sds-text: var(--v2-text-text-base);
+  --sds-muted: var(--v2-text-text-muted);
+  --sds-border: var(--v2-border-border-base);
+  --sds-focus: var(--v2-border-border-focus);
+  --sds-success: var(--v2-state-fg-success);
+  --sds-warning: var(--v2-state-fg-warning);
+  --sds-danger: var(--v2-state-fg-danger);
+  --sds-info: var(--v2-state-fg-info);
+}

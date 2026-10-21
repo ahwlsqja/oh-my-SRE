@@ -38,5 +38,8 @@ for (const [text, names] of [...groups].sort((left, right) =>
   output += `\n${"=".repeat(72)}\n${names.sort().join("\n")}\n${"=".repeat(72)}\n\n${text}\n`;
 }
 mkdirSync("public", { recursive: true });
+output +=
+  "\nOpenCode 디자인 파일 (MIT)\n\n" + readFileSync("public/licenses/OpenCode-MIT.txt", "utf8");
+output += "\nInter 글꼴 (SIL OFL 1.1)\n\n" + readFileSync("public/fonts/OFL-Inter.txt", "utf8");
 writeFileSync("public/THIRD_PARTY_NOTICES.txt", output);
 console.log(`런타임 고지 ${Object.values(licenses).flat().length}개를 보존했습니다.`);

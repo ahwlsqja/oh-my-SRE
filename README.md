@@ -29,25 +29,29 @@ pnpm dev
 pnpm typecheck
 pnpm lint
 pnpm format:check
+pnpm tokens:check
+pnpm test:sds
 pnpm build
 pnpm exec playwright install chromium
 pnpm test
 ```
 
-이미 설치한 Google Chrome을 쓰려면 `PLAYWRIGHT_CHANNEL=chrome pnpm test`를 실행합니다. E2E는 데스크톱과 모바일 크기의 Chromium에서 필터·상세·더 보기·데모 상태 전이·미확인 보존·키 미수집·외부 API 요청 없음·Escape/포커스 복귀·가로 넘침을 검증합니다. 스크린샷과 실패 trace는 git에 포함하지 않는 `test-results/`에 저장합니다. 실제 모바일 기기나 전체 보조 기술 조합의 인증을 주장하지 않습니다.
+이미 설치한 Google Chrome을 쓰려면 `PLAYWRIGHT_CHANNEL=chrome pnpm test`를 실행합니다. E2E는 데스크톱과 모바일 크기의 Chromium에서 필터·상세·더 보기·데모 상태 전이·미확인 보존·키 미수집·외부 API 요청 없음·Escape/포커스 복귀·가로 넘침을 검증합니다. 스크린샷과 실패 trace는 git에 포함하지 않는 `test-results/`에 저장합니다. 라이트·다크 전환도 검증합니다. 실제 모바일 기기나 전체 보조 기술 조합의 인증을 주장하지 않습니다.
 
 ## 구조와 다음 경계
 
-- [DESIGN.md](DESIGN.md): 정보 계층·Radix 토큰·반응형·접근성·콘텐츠 원칙.
+- [DESIGN.md](DESIGN.md): 정보 계층·OpenCode 기반 SDS 토큰·반응형·접근성·콘텐츠 원칙.
 - [docs/PRD.md](docs/PRD.md): 제품 흐름·공급자 경계·불확실성·승인과 실행의 분리·인수 기준.
 - `src/demo.ts`: 새로 작성한 합성 사건과 관측 이력.
 - `src/App.tsx`: 판단함·상태·상세·연결 안내.
 - `tests/product.spec.ts`: 핵심 사용자 흐름 E2E.
 
+웹과 TUI는 공통 상태·우선순위·명칭과 light/dark 테마 데이터를 공유하도록 설계했습니다. 실제 TUI 실행기·키 바인딩·cell 레이아웃은 아직 구현하지 않았습니다.
+
 실제 수집 어댑터, 추론·에이전트 실행, 조직 인증, 영속 저장, 알림, 승인 감사와 복구 실행은 **아직 구현하지 않았습니다**. 장기사건 재조사·중복 알림 억제의 서버 정책도 화면 설명과 별개의 후속 범위입니다. 구독 로그인은 공급자가 공식 지원하는 경로와 조건을 검증한 뒤 별도로 설계해야 합니다.
 
 ## 디자인 시스템과 라이선스
 
-공식 [Radix Themes](https://www.radix-ui.com/themes/docs/overview/getting-started)를 기반으로 하고, 제품 레이아웃과 합성 예시는 새로 작성했습니다. 외부 폰트·사진·참고 스크린샷을 포함하지 않습니다.
+공식 [OpenCode UI](https://github.com/anomalyco/opencode/tree/a2cb1c4e7f7dfff5de7a17b96a12e78b6799ebcb/packages/ui)의 토큰·타입·간격·컴포넌트 CSS를 재사용하고 React에 이식했습니다. Radix Themes 스킨은 제거했습니다. [전용 SDS](docs/sds/README.md)와 [출처·수정 범위](docs/sds/UPSTREAM.md)를 참고하세요. OpenCode 전체 제품이나 원본 Solid 컴포넌트를 실행하는 것은 아닙니다.
 
-프로젝트는 [Apache License 2.0](LICENSE)입니다. Radix Themes·React 및 런타임 의존성의 원본 라이선스·저작권은 [타사 고지](public/THIRD_PARTY_NOTICES.txt)에 보존합니다. `pnpm licenses:generate`로 설치한 런타임 의존성의 고지를 재생성할 수 있으며, 정적 빌드에도 고지 파일이 포함됩니다.
+프로젝트는 [Apache License 2.0](LICENSE)입니다. OpenCode MIT·Inter OFL·React 및 런타임 의존성의 원본 라이선스·저작권은 [타사 고지](public/THIRD_PARTY_NOTICES.txt)에 보존합니다. `pnpm licenses:generate`로 고지를 재생성하며 정적 빌드에도 포함합니다. Inter 원본과 OFL을 자체 호스팅하고 한국어·코드에는 시스템 글꼴 fallback을 사용합니다. 로고·상표·원본 참고 스크린샷은 포함하지 않습니다.

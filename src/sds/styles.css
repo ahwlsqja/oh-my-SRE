@@ -1,0 +1,58 @@
+@layer properties, theme, base, components, utilities;
+@import "./upstream/styles/theme.css" layer(theme);
+@import "./upstream/styles/tokens/index.css";
+@import "./upstream/styles/base.css" layer(base);
+@import "./upstream/actions/button/button.css";
+@import "./upstream/data-display/badge/badge.css" layer(components);
+@import "./upstream/overlays/dialog/dialog.css" layer(components);
+@import "./upstream/forms/select/select.css" layer(components);
+@import "./upstream/navigation/tabs/tabs.css" layer(components);
+@import "./generated/tokens.css" layer(theme);
+@import "./components.css" layer(components);
+
+@font-face {
+  font-family: "Inter";
+  src: url("/fonts/Inter.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --font-family-sans: "Inter", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+  --font-family-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+  --sds-space-1: var(--spacing);
+  --sds-space-2: calc(var(--spacing) * 2);
+  --sds-space-3: calc(var(--spacing) * 3);
+  --sds-space-4: calc(var(--spacing) * 4);
+  --sds-space-6: calc(var(--spacing) * 6);
+  --sds-space-8: calc(var(--spacing) * 8);
+}
+
+body {
+  background: var(--sds-canvas);
+  color: var(--sds-text);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-large);
+  font-family: var(--font-family-sans);
+  -webkit-font-smoothing: antialiased;
+}
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+button,
+a,
+summary {
+  cursor: pointer;
+}
+button:focus-visible,
+a:focus-visible,
+summary:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--sds-focus);
+  outline-offset: 3px;
+}
+::selection {
+  background: var(--v2-state-bg-info);
+}

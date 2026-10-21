@@ -1,0 +1,94 @@
+{
+  "source": "OpenCode a2cb1c4e7f7dfff5de7a17b96a12e78b6799ebcb",
+  "statuses": {
+    "decision": {
+      "label": "판단 대기",
+      "role": "warning",
+      "marker": "!"
+    },
+    "investigating": {
+      "label": "조사 중",
+      "role": "info",
+      "marker": ">"
+    },
+    "observation_gap": {
+      "label": "관측 대기",
+      "role": "muted",
+      "marker": "?"
+    },
+    "budget_paused": {
+      "label": "예산 도달",
+      "role": "warning",
+      "marker": "="
+    },
+    "reviewed": {
+      "label": "검토 완료",
+      "role": "muted",
+      "marker": "v"
+    },
+    "held": {
+      "label": "판단 보류",
+      "role": "muted",
+      "marker": "-"
+    },
+    "stable": {
+      "label": "신호 안정",
+      "role": "success",
+      "marker": "."
+    },
+    "partial": {
+      "label": "일부 미확인",
+      "role": "warning",
+      "marker": "~"
+    },
+    "recovery_unknown": {
+      "label": "회복 미확인",
+      "role": "muted",
+      "marker": "?"
+    }
+  },
+  "priorities": {
+    "P0": {
+      "label": "긴급",
+      "role": "danger",
+      "requires": "독립적인 중대 영향 근거"
+    },
+    "P1": {
+      "label": "우선 판단",
+      "role": "warning",
+      "requires": "구체적인 사람 결정"
+    },
+    "P2": {
+      "label": "일반 조사",
+      "role": "muted",
+      "requires": "제한된 읽기 전용 조사"
+    }
+  },
+  "light": {
+    "canvas": "#ffffff",
+    "panel": "#fafafa",
+    "inset": "#f2f2f2",
+    "text": "#161616",
+    "muted": "#5c5c5c",
+    "border": "#e5e5e5",
+    "focus": "#7698fd",
+    "success": "#198b43",
+    "warning": "#cb9f34",
+    "danger": "#b82d35",
+    "info": "#3250df"
+  },
+  "dark": {
+    "canvas": "#161616",
+    "panel": "#242424",
+    "inset": "#2e2e2e",
+    "text": "#fafafa",
+    "muted": "#aeaeae",
+    "border": "#2e2e2e",
+    "focus": "#7698fd",
+    "success": "#6bd586",
+    "warning": "#f2cf76",
+    "danger": "#f17471",
+    "info": "#7698fd"
+  },
+  "renderer": "미구현"
+}

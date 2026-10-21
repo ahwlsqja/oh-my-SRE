@@ -1,0 +1,99 @@
+{
+  "repository": "https://github.com/anomalyco/opencode",
+  "commit": "a2cb1c4e7f7dfff5de7a17b96a12e78b6799ebcb",
+  "files": [
+    {
+      "source": "packages/ui/src/styles/tokens/index.css",
+      "local": "src/sds/upstream/styles/tokens/index.css",
+      "sha256": "58a4259bda161bdc751700dcd22516b19be0b208fe7ba0888ea2b94e0e510dae",
+      "modified": false,
+      "license": "MIT"
+    },
+    {
+      "source": "packages/ui/src/styles/tokens/colors.css",
+      "local": "src/sds/upstream/styles/tokens/colors.css",
+      "sha256": "2c45b6fc9efef86c634050290af44edde0aac110baad4e38dadc15a17cde90eb",
+      "modified": false,
+      "license": "MIT"
+    },
+    {
+      "source": "packages/ui/src/styles/tokens/theme.css",
+      "local": "src/sds/upstream/styles/tokens/theme.css",
+      "sha256": "7036f42d5fcdaf5e768f284e734653f1b87c7bc48ff458ea1258c4a897a8bd98",
+      "modified": false,
+      "license": "MIT"
+    },
+    {
+      "source": "packages/ui/src/styles/theme.css",
+      "local": "src/sds/upstream/styles/theme.css",
+      "sha256": "a0417be15084518d0b9a2c4c224ec49df15bf0f50f137c990bb07fe0b672a45d",
+      "modified": false,
+      "license": "MIT"
+    },
+    {
+      "source": "packages/ui/src/styles/base.css",
+      "local": "src/sds/upstream/styles/base.css",
+      "sha256": "80eee4dc88212f76967873db0c2546ad50128bc72297f3065a9876ef5b590b6d",
+      "modified": false,
+      "license": "MIT"
+    },
+    {
+      "source": "packages/ui/src/actions/button/button.css",
+      "local": "src/sds/upstream/actions/button/button.css",
+      "sha256": "1ce4e06b1aec4be599f45c65a57e1dbe055ec3dfddbd5776e346b6a811d11766",
+      "modified": false,
+      "license": "MIT"
+    },
+    {
+      "source": "packages/ui/src/actions/submit.css",
+      "local": "src/sds/upstream/actions/submit.css",
+      "sha256": "3689e826117e731ee80c8afd3f62d36aefceef36656f593b7a917d016baa7d89",
+      "modified": false,
+      "license": "MIT"
+    },
+    {
+      "source": "packages/ui/src/data-display/badge/badge.css",
+      "local": "src/sds/upstream/data-display/badge/badge.css",
+      "sha256": "081ca879f86cc0527ba323806296ee6ae84cbc83ac30e7d7e8d58b739ce1720c",
+      "modified": false,
+      "license": "MIT"
+    },
+    {
+      "source": "packages/ui/src/overlays/dialog/dialog.css",
+      "local": "src/sds/upstream/overlays/dialog/dialog.css",
+      "sha256": "4601d7128c3801da762b757b25cdc96687e4e0f1da40cb13ab7c7e7085696b71",
+      "modified": false,
+      "license": "MIT"
+    },
+    {
+      "source": "packages/ui/src/forms/select/select.css",
+      "local": "src/sds/upstream/forms/select/select.css",
+      "sha256": "98f4a3ec1ff80bbfd3aec0a20063fc7a0e80dc7f3f613d7884f73efbc9b359d7",
+      "modified": false,
+      "license": "MIT"
+    },
+    {
+      "source": "packages/ui/src/navigation/menu/menu.css",
+      "local": "src/sds/upstream/navigation/menu/menu.css",
+      "sha256": "bbb12c6a8546a26d4e384ce162505b81a28f6de29c51030e2676de8faaac81b1",
+      "modified": false,
+      "license": "MIT"
+    },
+    {
+      "source": "packages/ui/src/navigation/tabs/tabs.css",
+      "local": "src/sds/upstream/navigation/tabs/tabs.css",
+      "sha256": "2757784acc0782c4255d99e8313e0ad1e3ba7cb1a05ac19f624f4e60ab4c95fc",
+      "modified": false,
+      "license": "MIT"
+    },
+    {
+      "source": "packages/ui/src/assets/fonts/Inter.ttf",
+      "local": "public/fonts/Inter.ttf",
+      "sha256": "0be2399ea925f1f83ff974764761da9860ec50742ed29a5d4c1ffd0c5c7ac3a8",
+      "modified": false,
+      "license": "OFL-1.1",
+      "license_source": "https://github.com/rsms/inter/blob/master/LICENSE.txt",
+      "license_blob": "9b2ca37b3ffc77391d8b2ebef4a974ef32bf46ea"
+    }
+  ]
+}

@@ -1,0 +1,169 @@
+/* OpenCode 원본 위의 제품·React 이식 차이. 원본 data-component 계약은 유지한다. */
+[data-component="tag"][data-tone="warning"] {
+  color: var(--v2-state-fg-warning);
+  background: var(--v2-state-bg-warning);
+  border-color: var(--v2-state-border-warning);
+}
+[data-component="tag"][data-tone="success"] {
+  color: var(--v2-state-fg-success);
+  background: var(--v2-state-bg-success);
+  border-color: var(--v2-state-border-success);
+}
+[data-component="tag"][data-tone="danger"] {
+  color: var(--v2-state-fg-danger);
+  background: var(--v2-state-bg-danger);
+  border-color: var(--v2-state-border-danger);
+}
+[data-component="tag"][data-tone="info"] {
+  color: var(--v2-state-fg-info);
+  background: var(--v2-state-bg-info);
+  border-color: var(--v2-state-border-info);
+}
+[data-component="tabs"] {
+  height: auto;
+  background: var(--sds-panel);
+  --border-weak-base: var(--v2-border-border-base);
+  --background-base: var(--v2-background-bg-layer-01);
+  --background-stronger: var(--v2-background-bg-base);
+  --text-base: var(--v2-text-text-muted);
+  --text-strong: var(--v2-text-text-base);
+}
+[data-component="tabs"] [data-slot="tabs-list"]::after {
+  background: var(--sds-panel);
+}
+[data-component="tabs"] [data-slot="tabs-trigger-wrapper"] {
+  background: var(--sds-panel);
+  font-size: 13px;
+}
+[data-component="tabs"] [data-slot="tabs-trigger-wrapper"]:has([data-selected]) {
+  color: var(--sds-text);
+  background: var(--sds-canvas);
+}
+[data-component="tabs"] [data-slot="tabs-trigger"] {
+  gap: 8px;
+  padding: 14px 20px;
+  min-height: 44px;
+}
+[data-component="tabs"] [data-slot="tabs-trigger"]:focus-visible {
+  outline: 2px solid var(--sds-focus);
+  outline-offset: -4px;
+}
+.sds-tab-count {
+  font-size: 11px;
+  color: var(--sds-muted);
+  font-family: var(--font-family-mono);
+}
+[data-component="tabs"][data-sds-compact] {
+  width: auto;
+  background: transparent;
+}
+[data-component="tabs"][data-sds-compact] [data-slot="tabs-list"] {
+  height: 32px;
+  width: auto;
+  gap: 4px;
+}
+[data-component="tabs"][data-sds-compact] [data-slot="tabs-list"]::after {
+  display: none;
+}
+[data-component="tabs"][data-sds-compact] [data-slot="tabs-trigger-wrapper"] {
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  font-size: 12px;
+}
+[data-component="tabs"][data-sds-compact] [data-slot="tabs-trigger-wrapper"]:has([data-selected]) {
+  background: var(--sds-inset);
+}
+[data-component="tabs"][data-sds-compact] [data-slot="tabs-trigger"] {
+  padding: 4px 10px;
+  min-height: 32px;
+}
+[data-component="select-v2"] {
+  width: 240px;
+  max-width: 100%;
+}
+[data-component="select-v2"] select {
+  appearance: none;
+  cursor: pointer;
+  height: 100%;
+}
+[data-component="dialog-v2"] {
+  outline: none;
+  padding: 16px;
+}
+[data-component="dialog-v2"] [data-slot="dialog-container"] {
+  max-width: 100%;
+}
+[data-component="dialog-v2"][data-sds-layout="compact"] [data-slot="dialog-container"] {
+  height: auto;
+  max-height: 90dvh;
+}
+[data-component="dialog-v2"][data-sds-layout="case"] [data-slot="dialog-container"] {
+  width: 680px;
+  height: min(90dvh, 980px);
+}
+[data-component="dialog-v2"] [data-slot="dialog-container"] > [data-slot="dialog-content"] {
+  align-items: stretch;
+  overflow: hidden;
+  min-height: 0;
+}
+[data-component="dialog-v2"] h2 {
+  font-size: 18px;
+  font-weight: 530;
+  line-height: 1.6;
+  word-break: keep-all;
+  text-wrap: balance;
+}
+[data-component="observation-history"] .observation-bar {
+  display: flex;
+  gap: 3px;
+  height: 20px;
+}
+.observation-segment {
+  flex: 1;
+  min-width: 0;
+}
+.observation-segment.s,
+.history-legend .s {
+  background: var(--sds-success);
+  opacity: 0.72;
+}
+.observation-segment.p,
+.history-legend .p {
+  background: var(--sds-warning);
+  opacity: 0.75;
+}
+.observation-segment.u,
+.history-legend .u {
+  background: repeating-linear-gradient(135deg, var(--sds-border) 0 3px, transparent 3px 6px);
+}
+.observation-range {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  line-height: 20px;
+  color: var(--sds-muted);
+  margin-top: 6px;
+  font-variant-numeric: tabular-nums;
+}
+@media (hover: none) and (pointer: coarse) {
+  [data-component="button-v2"],
+  [data-component="select-v2"] {
+    min-height: 44px;
+  }
+  [data-component="tabs"][data-sds-compact] [data-slot="tabs-list"] {
+    height: 44px;
+  }
+  [data-component="tabs"][data-sds-compact] [data-slot="tabs-trigger"] {
+    min-height: 44px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
