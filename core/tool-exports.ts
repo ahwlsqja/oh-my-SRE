@@ -1,5 +1,18 @@
 import type { Registry } from "./registry.ts";
 import type { Policy } from "./policy.ts";
+import type { Broker } from "./broker.ts";
+export async function callDerivedTool(
+  broker: Broker,
+  context: { incidentId: string; revision: number; runId: string },
+  name: string,
+  args: unknown,
+) {
+  if (name !== "runbook.execute") throw new Error("unknown_tool");
+  return broker.execute({
+    ...context,
+    call: { name, arguments: args as Parameters<Broker["execute"]>[0]["call"]["arguments"] },
+  });
+}
 export function deriveExports(registry: Registry, policy?: Policy) {
   const books = registry
     .list()

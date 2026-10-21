@@ -11,7 +11,7 @@ import type {
 } from "./contracts.ts";
 import type { Broker } from "./broker.ts";
 import type { GitWiki } from "../providers/wiki.ts";
-import { deriveExports } from "./tool-exports.ts";
+import { deriveExports, callDerivedTool } from "./tool-exports.ts";
 import type { RunContext } from "./contracts.ts";
 export interface EngineOptions {
   store: Journal<EngineState>;
@@ -274,12 +274,16 @@ export class Engine {
       }
       if (result.outcome !== "completed") throw new Error("investigation_failed");
       for (const call of result.toolCalls) {
-        const effect = await broker.execute({
-          incidentId: id,
-          revision: runContext.revision,
-          runId: runContext.runId,
-          call,
-        });
+        const effect = await callDerivedTool(
+          broker,
+          {
+            incidentId: id,
+            revision: runContext.revision,
+            runId: runContext.runId,
+          },
+          call.name,
+          call.arguments,
+        );
         if (effect.state === "verified") this.finishVerified();
         else
           store.transaction((s) => {
