@@ -162,15 +162,13 @@ export class Engine {
     let context: RunContext | undefined;
     const current = store.state.incidents[id];
     if (!current || current.status !== "open" || current.activeRunId || current.dueAt > now) return;
-    const knowledge = wiki
-      .search(current.failureClass)
-      .map((value) => ({
-        incidentId: value.incidentId,
-        failureClass: value.failureClass,
-        outcome: value.outcome,
-        runbookRef: value.runbook,
-        evidenceRefs: value.evidenceRefs ?? [digest(value)],
-      }));
+    const knowledge = wiki.search(current.failureClass).map((value) => ({
+      incidentId: value.incidentId,
+      failureClass: value.failureClass,
+      outcome: value.outcome,
+      runbookRef: value.runbook,
+      evidenceRefs: value.evidenceRefs ?? [digest(value)],
+    }));
     store.transaction((s) => {
       const incident = s.incidents[id];
       if (incident.activeRunId || incident.status !== "open" || incident.dueAt > now) return;
@@ -375,7 +373,15 @@ export class Engine {
       for (const incident of Object.values(s.incidents))
         if (incident.activeRunId) {
           delete incident.activeRunId;
-          incident.investigation = "interrupted_usage_unknown";
+          incident.investigation =
+            incident.status === "resolved"
+              ? "completed"
+              : Object.values(s.effects).some(
+                    (effect) => effect.incidentId === incident.id && effect.state !== "verified",
+                  )
+                ? "effect_unknown"
+                : "interrupted_usage_unknown";
+          delete incident.activeRunDeadlineAt;
           incident.dueAt = this.now() + this.policy.persistenceMs;
         }
     });
