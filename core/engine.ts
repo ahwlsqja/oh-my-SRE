@@ -343,6 +343,7 @@ export class Engine {
           continue;
         incident.status = "resolved";
         incident.recovery = "verified";
+        incident.investigation = "completed";
         incident.runbookRef = effect.runbookRef;
         for (const page of Object.values(s.outbox))
           if (page.incidentId === incident.id && page.episode === incident.episode)
@@ -376,6 +377,11 @@ export class Engine {
     }
   }
   async tick() {
+    for (const effect of Object.values(this.options.store.state.effects))
+      if (effect.state !== "verified" && (effect.reconcileDueAt ?? 0) <= this.now())
+        await this.options.broker.reconcile(effect.id);
+    this.finishVerified();
+    this.syncKnowledge();
     for (const incident of Object.values(this.options.store.state.incidents))
       await this.run(incident.id);
   }

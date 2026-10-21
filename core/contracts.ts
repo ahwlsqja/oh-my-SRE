@@ -84,6 +84,7 @@ export interface Effect {
   startedAt: number;
   verifiedAt?: number;
   proofDigest?: string;
+  reconcileDueAt?: number;
 }
 export interface Page {
   key: string;

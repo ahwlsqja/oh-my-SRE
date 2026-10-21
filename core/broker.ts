@@ -123,6 +123,7 @@ export class Broker {
       state: "executing",
       runbookRef: { id: book.id, version: book.version, digest: book.digest },
       startedAt: now(),
+      reconcileDueAt: now() + this.options.policy.persistenceMs,
     };
     let reserved = false;
     store.transaction((s) => {
@@ -199,6 +200,7 @@ export class Broker {
       }
       store.transaction((s) => {
         s.effects[effect.id].state = verified ? "verified" : "outcome_unknown";
+        s.effects[effect.id].reconcileDueAt = now() + this.options.policy.persistenceMs;
         if (verified) {
           s.effects[effect.id].verifiedAt = now();
           s.effects[effect.id].proofDigest = proofDigest;
