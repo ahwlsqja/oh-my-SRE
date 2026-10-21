@@ -9,6 +9,7 @@ export const claims = [
   "deployment_binding",
   "collector_acceptance",
   "raw_overview_cohort",
+  "raw_load_boundary_membership",
   "flink_fact_cohort",
   "fact_candidate_membership",
   "product_overview_response",
@@ -42,6 +43,8 @@ export const counterKeys = [
   "fragments",
   "starts",
   "httpStatus",
+  "rawBoundaries",
+  "loadedBoundaries",
 ] as const;
 type Status = "verified" | "partial" | "unknown" | "failed" | "stale";
 export type Receipt = {
@@ -130,6 +133,7 @@ export function validateSnapshot(input: unknown, now = Date.now()): Snapshot {
       collector_readback: ["collector_acceptance"],
       clickhouse_scoped_aggregate: [
         "raw_overview_cohort",
+        "raw_load_boundary_membership",
         "flink_fact_cohort",
         "fact_candidate_membership",
       ],
