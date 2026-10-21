@@ -87,6 +87,7 @@ export class Broker {
     const effect: Effect = {
       id,
       incidentId: incident.id,
+      revision: incident.revision,
       resourceKey: incident.resourceKey,
       state: "executing",
       runbookRef: { id: book.id, version: book.version, digest: book.digest },

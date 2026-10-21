@@ -53,6 +53,7 @@ export interface Incident {
   investigation: string;
   attempts: number;
   dueAt: number;
+  evidenceExpiresAt: number;
   activeRunId?: string;
   lastRunRevision?: number;
   recovery: "unverified" | "verified";
@@ -62,6 +63,7 @@ export interface Incident {
 export interface Effect {
   id: string;
   incidentId: string;
+  revision: number;
   resourceKey: string;
   state: "executing" | "outcome_unknown" | "verified";
   runbookRef: { id: string; version: string; digest: string };
