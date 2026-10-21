@@ -10,6 +10,7 @@ export const claims = [
   "collector_acceptance",
   "raw_overview_cohort",
   "flink_fact_cohort",
+  "fact_candidate_membership",
   "product_overview_response",
   "sre_operations_projection",
 ] as const;
@@ -24,6 +25,8 @@ export const limitations = [
   "history_unavailable",
   "unique_observations_unverified",
   "scope_only",
+  "source_delivery_unverified",
+  "current_winner_unverified",
 ] as const;
 export const counterKeys = [
   "checksPassed",
@@ -125,7 +128,11 @@ export function validateSnapshot(input: unknown, now = Date.now()): Snapshot {
     const allowedClaims: Record<Receipt["sourceKind"], readonly Receipt["claim"][]> = {
       deployment_readback: ["deployment_binding"],
       collector_readback: ["collector_acceptance"],
-      clickhouse_scoped_aggregate: ["raw_overview_cohort", "flink_fact_cohort"],
+      clickhouse_scoped_aggregate: [
+        "raw_overview_cohort",
+        "flink_fact_cohort",
+        "fact_candidate_membership",
+      ],
       product_overview_http: ["product_overview_response"],
       sre_operations_overview_http: ["sre_operations_projection"],
     };

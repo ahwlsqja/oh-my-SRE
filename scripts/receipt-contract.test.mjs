@@ -96,6 +96,14 @@ test("불완전 coverage는 단계 확인으로 승격되지 않는다", () => {
   assert.equal(projectSnapshot(input, now).receipts[0].status, "partial");
 });
 
+test("Fact 후보 대응은 전체 Flink 검증과 별도 claim으로 보존한다", () => {
+  const input = fixture();
+  input.receipts[0].sourceKind = "clickhouse_scoped_aggregate";
+  input.receipts[0].claim = "fact_candidate_membership";
+  input.receipts[0].coverage = "incomplete";
+  assert.equal(projectSnapshot(input, now).receipts[0].claim, "fact_candidate_membership");
+});
+
 test("저장소 밖 고정 일반 파일만 상한 내에서 읽고 원문 오류를 숨긴다", async () => {
   const root = await mkdtemp(join(tmpdir(), "oms-synthetic-"));
   const file = join(root, "receipt.json");
